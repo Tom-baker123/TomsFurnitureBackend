@@ -31,12 +31,9 @@
 
   <ItemGroup>
     <Folder Include="Common\Models\" />
-    <Folder Include="Mappings\" />
     <Folder Include="Helpers\" />
     <Folder Include="Common\Contansts\" />
     <Folder Include="Utilities\" />
-    <Folder Include="Services\IServices\" />
-    <Folder Include="VModels\" />
   </ItemGroup>
 
 </Project>
