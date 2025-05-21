@@ -27,11 +27,11 @@
     </PackageReference>
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.10.0" />
+    <PackageReference Include="TencentCloudSDK.Cloudaudit" Version="3.0.1244" />
   </ItemGroup>
 
   <ItemGroup>
     <Folder Include="Common\Models\" />
-    <Folder Include="Helpers\" />
     <Folder Include="Common\Contansts\" />
     <Folder Include="Utilities\" />
   </ItemGroup>
