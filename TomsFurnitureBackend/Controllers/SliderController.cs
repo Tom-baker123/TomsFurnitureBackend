@@ -16,9 +16,9 @@ namespace TomsFurnitureBackend.Controllers
         private readonly ILogger<SliderController> _logger;
         private readonly Cloudinary _cloudinary;
 
-        public SliderController(ISliderService ISliderService, ILogger<SliderController> logger, Cloudinary cloudinary)
+        public SliderController(ISliderService sliderService, ILogger<SliderController> logger, Cloudinary cloudinary)
         {
-            _sliderService = _sliderService;
+            _sliderService = sliderService;
             _logger = logger;
             _cloudinary = cloudinary;
         }
@@ -29,10 +29,7 @@ namespace TomsFurnitureBackend.Controllers
             {
                 // Kiểm tra trùng tên
                 //var existingProduct = await _sliderService.GetProductByNameAsync(slidervModel.Name);
-                //if (existingProduct != null)
-                //{
-                //    return BadRequest(new { Message = "Product name already exists." });
-                //}
+                //if (existingProduct != null) { return BadRequest(new { Message = "Product name already exists." }); }
 
                 // Xử lý upload ảnh
                 string imageUrl = null;
@@ -47,7 +44,7 @@ namespace TomsFurnitureBackend.Controllers
                     var uploadParams = new ImageUploadParams
                     {
                         File = new FileDescription(ImageFile.FileName, ImageFile.OpenReadStream()),
-                        Transformation = new Transformation().Width(500).Height(500).Crop("fill")
+                        //Transformation = new Transformation().Width(500).Height(500).Crop("fill")
                     };
 
                     var uploadResult = await _cloudinary.UploadAsync(uploadParams);
@@ -84,18 +81,31 @@ namespace TomsFurnitureBackend.Controllers
                 return StatusCode(500, new { Message = ex.Message });
             }
         }
-
-
+        
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(int id)
+        public async Task<ActionResult<SliderGetVModel>?> GetById(int id)
         {
+            // Trả về 1 Slider dựa vào ID
             var result = await _sliderService.GetByIdAsync(id);
-            if (!result.IsSuccess)
+            if (result == null)
             {
-                return NotFound(result);
+                return NotFound();
             }
+            return result;
+        }
 
-            return Ok(result);
+        [HttpGet]
+        public async Task<List<SliderGetVModel>> GetAllAsync()
+        {
+            // Trả về tất cả Slider
+            return await _sliderService.GetAllAsync();
+        }
+
+        [HttpDelete]
+        public async Task<ResponseResult> Delete(int id)
+        {
+            // Xóa Sldier dựa trên id 
+            return await _sliderService.DeleteAsync(id);
         }
     }
 }

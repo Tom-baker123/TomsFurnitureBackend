@@ -40,7 +40,7 @@ namespace TomsFurnitureBackend.Extensions
 
         public static SliderGetVModel ToGetVModel(this Slider entity)
         {
-            return new SliderGetVModel
+            var model = new SliderGetVModel
             {
                 Id = entity.Id,
                 Title = entity.Title,
@@ -59,6 +59,7 @@ namespace TomsFurnitureBackend.Extensions
                 UpdatedBy = entity.UpdatedBy,
                 ImageUrl = entity.ImageUrl
             };
+            return model;
         }
     }
 }
