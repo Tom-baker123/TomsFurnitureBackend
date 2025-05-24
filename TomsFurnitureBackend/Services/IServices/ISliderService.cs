@@ -7,11 +7,10 @@ namespace TomsFurnitureBackend.Services.Interfaces
     public interface ISliderService
     {
         
-        Task<List<SliderGetVModel>> GetAllAsync(); // Phương thức lấy tất cả Slider
-        Task<SliderGetVModel>? GetByIdAsync(int id); // Phương thức lấy theo ID của Slider
-        Task<ResponseResult> Create(SliderCreateVModel model, string imageUrl); // Phương thức tạo Slider
-        Task<ResponseResult> DeleteAsync(int id);
-        Task<ResponseResult> Update(SliderUpdateVModel model);
-
+        Task<List<SliderGetVModel>> GetAllAsync(); // Lấy tất cả Slider
+        Task<SliderGetVModel>? GetByIdAsync(int id); // Lấy theo Slider theo ID 
+        Task<ResponseResult> CreateAsync(SliderCreateVModel model, string imageUrl); // Tạo Slider
+        Task<ResponseResult> DeleteAsync(int id); // Xóa Slider
+        Task<ResponseResult> UpdateAsync(SliderUpdateVModel model, string? imageUrl = null); // Cập nhật Slider nếu không có tham số là null
     }
 }
