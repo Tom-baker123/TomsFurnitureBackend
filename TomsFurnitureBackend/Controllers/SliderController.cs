@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using OA.Domain.Common.Models;
 using TomsFurnitureBackend.Services.Interfaces;
 using TomsFurnitureBackend.VModels;
+using static Org.BouncyCastle.Crypto.Engines.SM2Engine;
 
 namespace TomsFurnitureBackend.Controllers
 {
@@ -56,11 +57,10 @@ namespace TomsFurnitureBackend.Controllers
                     }
 
                     imageUrl = uploadResult.SecureUrl.AbsoluteUri;
-
                 }
 
                 // Gọi service
-                var result = await _sliderService.Create(slidervModel, imageUrl);
+                var result = await _sliderService.CreateAsync(slidervModel, imageUrl);
 
                 if (!result.IsSuccess)
                 {
@@ -106,6 +106,74 @@ namespace TomsFurnitureBackend.Controllers
         {
             // Xóa Sldier dựa trên id 
             return await _sliderService.DeleteAsync(id);
+        }
+
+        [HttpPut]
+        public async Task<ActionResult> UpdateAsync(int id, [FromForm] SliderUpdateVModel sliderModel, IFormFile? ImageFile = null)
+        {
+            try
+            {
+                // Kiểm tra ID hợp lệ
+                if (id != sliderModel.Id)
+                {
+                    return BadRequest("ID trong URL không khớp với ID trong model.");
+                }
+
+                // Xử lý upload ảnh nếu có
+                string? imageUrl = null;
+                // Kiểm tra file ảnh khi truyền vào không null thì execute.
+                if (ImageFile != null && ImageFile.Length > 0) {
+                    string[] allowedExtensions = { ".jpg", ".jpeg", ".png", ".gif", "webp"};
+                    var fileExtension = Path.GetExtension(ImageFile.FileName).ToLower();
+
+                    // Kiểm tra định dạng file
+                    if (!allowedExtensions.Contains(fileExtension))
+                    {
+                        return BadRequest("Format file not support!");
+                    }
+
+                    // Tạo đối tượng uploadParams để cấu hình các tham số upload ảnh lên Cloudinary
+                    var uploadParams = new ImageUploadParams
+                    {
+                        // FileDescription gồm:
+                        // - ImageFile.FileName: tên file gốc do người dùng upload (vd: "avatar.png")
+                        // - ImageFile.OpenReadStream(): mở luồng đọc dữ liệu từ file upload đó (stream)
+                        File = new FileDescription(ImageFile.FileName, ImageFile.OpenReadStream()),
+                    };
+
+                    // Thực thi upload ảnh
+                    var uploadResult = await _cloudinary.UploadAsync(uploadParams);
+
+                    // Kiểm tra lỗi upload ảnh
+                    if (uploadResult.Error != null) {
+                        _logger.LogError("Lỗi upload Cloudinary: ", uploadResult.Error.Message);
+                        return BadRequest($"Upload Cloudinary Failed: {uploadResult.Error.Message}");
+                    }
+
+                    // - Lấy đường dẫn ảnh từ Cloudinary: 
+                    //  + uploadResult Đây là kết quả trả về từ Cloudinary sau khi bạn gọi UploadAsync() hoặc Upload().
+                    //  + uploadResult.SecureUrl Đây là URL của hình ảnh đã được upload, sử dụng HTTPS(an toàn).
+                    //  + .AbsoluteUri Chuyển URL từ kiểu Uri sang string để dễ sử dụng trong code, JSON, hoặc hiển thị.
+                    //  + imageUrl Biến để lưu lại đường dẫn ảnh – bạn có thể lưu vào database hoặc trả về cho client.
+                    imageUrl = uploadResult.SecureUrl.AbsoluteUri;
+                }
+
+                // Gọi service để cập nhật ảnh
+                var result = await _sliderService.UpdateAsync(sliderModel, imageUrl);
+
+                // Kiểm tra cập nhật api có thành công không?
+                if (!result.IsSuccess) { 
+                    return BadRequest(result.Message); 
+                }
+
+                // Trả về thành công
+                return Ok(result);
+            }
+            catch (Exception ex) {
+                // _logger.LogError($"You have an error when updating the slider: {ex.Message}");
+                // return StatusCode(500, new { Messsage = ex.Message });
+                return BadRequest(ex.Message);
+            }
         }
     }
 }

@@ -8,6 +8,7 @@ using System;
 using OA.Domain.Common.Models;
 using Azure;
 using TomsFurnitureBackend.Mappings;
+using System.Linq;
 
 namespace TomsFurnitureBackend.Services
 {
@@ -19,7 +20,7 @@ namespace TomsFurnitureBackend.Services
         {
             _context = context;
         }
-        public async Task<ResponseResult> Create(SliderCreateVModel model, string imageUrl)
+        public async Task<ResponseResult> CreateAsync(SliderCreateVModel model, string imageUrl)
         {
             var response = new ResponseResult();
             try
@@ -59,7 +60,8 @@ namespace TomsFurnitureBackend.Services
                 }
                 return new SuccessResponseResult(slider, "You have deleted your slider!");
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 return new ErrorResponseResult($"You have an error when deleted Slider: {ex.Message}");
             }
         }
@@ -79,27 +81,51 @@ namespace TomsFurnitureBackend.Services
 
         public async Task<SliderGetVModel?> GetByIdAsync(int id)
         {
-                var slider = await _context.Sliders
-                    //.Include(s => s.Product) // nếu bạn cần include Product
-                    .FirstOrDefaultAsync(s => s.Id == id);
+            var slider = await _context.Sliders
+                //.Include(s => s.Product) // nếu bạn cần include Product
+                .FirstOrDefaultAsync(s => s.Id == id);
 
-                if (slider == null)
+            if (slider == null)
+            {
+                return null;
+            }
+
+            var viewModel = SliderExtensions.ToGetVModel(slider);
+            return viewModel;
+        }
+
+        public async Task<ResponseResult> UpdateAsync(SliderUpdateVModel model, string? imageUrl = null)
+        {
+            try
+            {
+                // B1: Tìm Slider theo ID
+                var slider = await _context.Sliders
+                    .FirstOrDefaultAsync(t => t.Id == model.Id);
+                // + Kiểm tra slider có rỗng không ?
+
+                if (slider == null) return new ErrorResponseResult($"Not found ID: {slider.Id}");
+
+                // B2: Cập nhật info từ model
+                slider.UpdateEntity(model);
+
+                // B3: Cập nhật ImageUrl nếu có tham số truyền vào
+                if (!string.IsNullOrEmpty(imageUrl))
                 {
-                    return null;
+                    slider.ImageUrl = imageUrl;
                 }
 
-                var viewModel = SliderExtensions.ToGetVModel(slider);
-                return viewModel;
-        }
+                // B4: Lưu thay đổi vào DB.
+                _context.SaveChanges();
+                await _context.SaveChangesAsync();
 
-        public Task<ResponseResult> Update(int id, SliderUpdateVModel model)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<ResponseResult> Update(SliderUpdateVModel model)
-        {
-            throw new NotImplementedException();
+                // B5: Chuyển đổi sang VModel để trả về thông báo cho SuccessResponseResult. 
+                var sliderVM = slider.ToGetVModel();
+                return new SuccessResponseResult(sliderVM, "Cập nhật slider thành công");
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResponseResult($"You have an error when updated Slider: {ex.Message}");
+            }
         }
     }
 }
