@@ -7,5 +7,6 @@ namespace TomsFurnitureBackend.Controllers
     [ApiController]
     public class ProductVariantController : ControllerBase
     {
+
     }
 }

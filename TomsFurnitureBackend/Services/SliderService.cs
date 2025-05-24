@@ -45,27 +45,61 @@ namespace TomsFurnitureBackend.Services
                 return new ErrorResponseResult(ex.Message);
             }
         }
-        public async Task<ResponseResult> GetByIdAsync(int id)
+
+        public async Task<ResponseResult> DeleteAsync(int id)
         {
             try
             {
+                // Tìm Slider theo ID
+                var slider = await _context.Sliders.FirstOrDefaultAsync(s => s.Id == id);
+                if (slider != null)
+                {
+                    _context.Sliders.Remove(slider);
+                    await _context.SaveChangesAsync();
+                }
+                return new SuccessResponseResult(slider, "You have deleted your slider!");
+            }
+            catch (Exception ex) {
+                return new ErrorResponseResult($"You have an error when deleted Slider: {ex.Message}");
+            }
+        }
+
+        public async Task<List<SliderGetVModel>> GetAllAsync()
+        {
+
+            // Lấy tất cả Slider từ database
+            var sliders = await _context.Sliders
+                .OrderBy(x => x.DisplayOrder) // Sắp xếp sản phẩm theo Display Order
+                .ToListAsync();
+
+            // Chuyển đổi từ model sang VModel
+            var result = sliders.Select(x => SliderExtensions.ToGetVModel(x)).ToList();
+            return result;
+        }
+
+        public async Task<SliderGetVModel?> GetByIdAsync(int id)
+        {
                 var slider = await _context.Sliders
-                    .Include(s => s.Product) // nếu bạn cần include Product
+                    //.Include(s => s.Product) // nếu bạn cần include Product
                     .FirstOrDefaultAsync(s => s.Id == id);
 
                 if (slider == null)
                 {
-                    return new ErrorResponseResult("Không tìm thấy slider");
+                    return null;
                 }
 
-                var viewModel = slider.ToGetVModel();
-                return new SuccessResponseResult(viewModel, "Lấy slider thành công");
-            }
-            catch (Exception ex)
-            {
-                return new ErrorResponseResult(ex.Message);
-            }
+                var viewModel = SliderExtensions.ToGetVModel(slider);
+                return viewModel;
         }
 
+        public Task<ResponseResult> Update(int id, SliderUpdateVModel model)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<ResponseResult> Update(SliderUpdateVModel model)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
