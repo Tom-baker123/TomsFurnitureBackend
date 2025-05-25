@@ -32,23 +32,78 @@ namespace TomsFurnitureBackend.Services
                     return new ErrorResponseResult("Tên sản phẩm đã tồn tại.");
                 }
 
+                // Kiểm tra các khóa ngoại của Product
+                if (model.BrandId.HasValue && !await _context.Brands.AnyAsync(b => b.Id == model.BrandId))
+                {
+                    return new ErrorResponseResult($"Thương hiệu với ID {model.BrandId} không tồn tại.");
+                }
+                if (model.CategoryId.HasValue && !await _context.Categories.AnyAsync(c => c.Id == model.CategoryId))
+                {
+                    return new ErrorResponseResult($"Danh mục với ID {model.CategoryId} không tồn tại.");
+                }
+                if (model.CountriesId.HasValue && !await _context.Countries.AnyAsync(c => c.Id == model.CountriesId))
+                {
+                    return new ErrorResponseResult($"Quốc gia với ID {model.CountriesId} không tồn tại.");
+                }
+                if (model.SupplierId.HasValue && !await _context.Suppliers.AnyAsync(s => s.Id == model.SupplierId))
+                {
+                    return new ErrorResponseResult($"Nhà cung cấp với ID {model.SupplierId} không tồn tại.");
+                }
+
+                // Kiểm tra các khóa ngoại của ProductVariant
+                foreach (var variant in model.ProductVariants)
+                {
+                    if (!await _context.Colors.AnyAsync(c => c.Id == variant.ColorId))
+                    {
+                        return new ErrorResponseResult($"Màu với ID {variant.ColorId} không tồn tại.");
+                    }
+                    if (!await _context.Sizes.AnyAsync(s => s.Id == variant.SizeId))
+                    {
+                        return new ErrorResponseResult($"Kích thước với ID {variant.SizeId} không tồn tại.");
+                    }
+                    if (!await _context.Materials.AnyAsync(m => m.Id == variant.MaterialId))
+                    {
+                        return new ErrorResponseResult($"Chất liệu với ID {variant.MaterialId} không tồn tại.");
+                    }
+                    if (!await _context.Units.AnyAsync(u => u.Id == variant.UnitId))
+                    {
+                        return new ErrorResponseResult($"Đơn vị với ID {variant.UnitId} không tồn tại.");
+                    }
+                }
+
                 // Chuyển đổi từ ViewModel sang Entity
                 var product = model.ToEntity();
 
-                // Thêm vào DbContext
+                // Thêm Product vào DbContext
                 _context.Products.Add(product);
+                await _context.SaveChangesAsync(); // Lưu để sinh Product.Id
+
+                // Gán ProductId và đảm bảo Id của ProductVariant không được gán
+                foreach (var variant in product.ProductVariants)
+                {
+                    variant.ProductId = product.Id;
+                    variant.Id = 0; // Đặt Id về 0 để EF bỏ qua và để SQL Server tự sinh
+                }
+
+                // Lưu các ProductVariant
+                _context.ProductVariants.AddRange(product.ProductVariants);
                 await _context.SaveChangesAsync();
 
-                // Chuyển đổi sang ViewModel để trả về
-                var productVm = product.ToGetVModel();
-                return new SuccessResponseResult(productVm, "Thêm sản phẩm thành công");
+                // Lấy dữ liệu mới nhất để trả về
+                var productVm = await GetByIdAsync(product.Id);
+                return new SuccessResponseResult(productVm, "Thêm sản phẩm và biến thể thành công");
+            }
+            catch (DbUpdateException dbEx)
+            {
+                var errorMessage = dbEx.InnerException?.Message ?? dbEx.Message;
+                return new ErrorResponseResult($"Lỗi khi tạo sản phẩm: {errorMessage}");
             }
             catch (Exception ex)
             {
                 return new ErrorResponseResult($"Lỗi khi tạo sản phẩm: {ex.Message}");
             }
         }
-
+       
         // Xóa sản phẩm theo ID
         public async Task<ResponseResult> DeleteAsync(int id)
         {
@@ -108,7 +163,8 @@ namespace TomsFurnitureBackend.Services
                     .ThenInclude(pv => pv.Material)
                 .Include(p => p.ProductVariants)
                     .ThenInclude(pv => pv.Unit)
-                .OrderBy(p => p.ProductName) // Sắp xếp theo tên sản phẩm
+                .OrderBy(p => p.Id)
+                //.OrderBy(p => p.ProductName) // Sắp xếp theo tên sản phẩm
                 .ToListAsync();
 
             return products.Select(p => p.ToGetVModel()).ToList();
