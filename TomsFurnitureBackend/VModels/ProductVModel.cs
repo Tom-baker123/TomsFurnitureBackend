@@ -32,6 +32,10 @@ namespace TomsFurnitureBackend.VModels
 
             [DefaultValue(true)]
             public bool? IsActive { get; set; }
+
+            [Required(ErrorMessage = "Phải cung cấp ít nhất một biến thể sản phẩm.")]
+            [MinLength(1, ErrorMessage = "Phải cung cấp ít nhất một biến thể sản phẩm.")]
+            public List<ProductVariantCreateVModel> ProductVariants { get; set; } = new List<ProductVariantCreateVModel>();
         }
 
         public class ProductUpdateVModel : ProductCreateVModel
@@ -56,12 +60,55 @@ namespace TomsFurnitureBackend.VModels
             public List<ProductVariantGetVModel> ProductVariants { get; set; } = new List<ProductVariantGetVModel>();
         }
 
+        public class ProductVariantCreateVModel
+        {
+            [Required(ErrorMessage = "Giá gốc là bắt buộc.")]
+            [Range(0, double.MaxValue, ErrorMessage = "Giá gốc phải là một số không âm.")]
+            [DefaultValue(0)]
+            public decimal OriginalPrice { get; set; }
+
+            [Range(0, double.MaxValue, ErrorMessage = "Giá giảm phải là một số không âm.")]
+            [DefaultValue(0)]
+            public decimal? DiscountedPrice { get; set; }
+
+            [Required(ErrorMessage = "Số lượng tồn kho là bắt buộc.")]
+            [Range(0, int.MaxValue, ErrorMessage = "Số lượng tồn kho phải là một số không âm.")]
+            [DefaultValue(0)]
+            public int StockQty { get; set; }
+
+            [MaxLength(500, ErrorMessage = "URL ảnh không được vượt quá 500 ký tự.")]
+            public string? ImageUrl { get; set; }
+
+            [Required(ErrorMessage = "ID màu là bắt buộc.")]
+            [Range(1, int.MaxValue, ErrorMessage = "ID màu phải là một số nguyên dương.")]
+            [DefaultValue(0)]
+            public int ColorId { get; set; }
+
+            [Required(ErrorMessage = "ID kích thước là bắt buộc.")]
+            [Range(1, int.MaxValue, ErrorMessage = "ID kích thước phải là một số nguyên dương.")]
+            [DefaultValue(0)]
+            public int SizeId { get; set; }
+
+            [Required(ErrorMessage = "ID chất liệu là bắt buộc.")]
+            [Range(1, int.MaxValue, ErrorMessage = "ID chất liệu phải là một số nguyên dương.")]
+            [DefaultValue(0)]
+            public int MaterialId { get; set; }
+
+            [Required(ErrorMessage = "ID đơn vị là bắt buộc.")]
+            [Range(1, int.MaxValue, ErrorMessage = "ID đơn vị phải là một số nguyên dương.")]
+            [DefaultValue(0)]
+            public int UnitId { get; set; }
+
+            [DefaultValue(true)]
+            public bool? IsActive { get; set; }
+        }
+
         public class ProductVariantGetVModel
         {
             public int Id { get; set; }
 
             [Range(0, double.MaxValue, ErrorMessage = "Giá gốc phải là một số không âm.")]
-            public decimal? OriginalPrice { get; set; }
+            public decimal OriginalPrice { get; set; }
 
             [Range(0, double.MaxValue, ErrorMessage = "Giá giảm phải là một số không âm.")]
             public decimal? DiscountedPrice { get; set; }

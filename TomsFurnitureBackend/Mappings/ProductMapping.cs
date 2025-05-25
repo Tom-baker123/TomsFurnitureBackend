@@ -9,7 +9,7 @@ namespace TomsFurnitureBackend.Extensions
         // Chuyển từ ProductCreateVModel sang Entity Product
         public static Product ToEntity(this ProductCreateVModel model)
         {
-            return new Product
+            var product = new Product
             {
                 ProductName = model.ProductName,
                 SpecificationDescription = model.SpecificationDescription,
@@ -19,7 +19,27 @@ namespace TomsFurnitureBackend.Extensions
                 SupplierId = model.SupplierId,
                 IsActive = model.IsActive ?? true,
                 CreatedDate = DateTime.UtcNow,
-                ViewCount = 0
+                ViewCount = 0,
+                ProductVariants = model.ProductVariants.Select(pv => pv.ToEntity()).ToList()
+            };
+            return product;
+        }
+
+        // Chuyển từ ProductVariantCreateVModel sang Entity ProductVariant
+        public static ProductVariant ToEntity(this ProductVariantCreateVModel model)
+        {
+            return new ProductVariant
+            {
+                OriginalPrice = model.OriginalPrice,
+                DiscountedPrice = model.DiscountedPrice,
+                StockQty = model.StockQty,
+                ImageUrl = model.ImageUrl,
+                ColorId = model.ColorId,
+                SizeId = model.SizeId,
+                MaterialId = model.MaterialId,
+                UnitId = model.UnitId,
+                IsActive = model.IsActive ?? true,
+                CreatedDate = DateTime.UtcNow
             };
         }
 
@@ -58,18 +78,18 @@ namespace TomsFurnitureBackend.Extensions
                 CategoryName = entity.Category?.CategoryName,
                 CountryName = entity.Countries?.CountryName,
                 SupplierName = entity.Supplier?.SupplierName,
-                ProductVariants = entity.ProductVariants?.Select(pv => new TomsFurnitureBackend.VModels.ProductVModel.ProductVariantGetVModel
+                ProductVariants = entity.ProductVariants?.Select(pv => new ProductVModel.ProductVariantGetVModel
                 {
                     Id = pv.Id,
-                    OriginalPrice = pv.OriginalPrice, // Bỏ ?? vì non-nullable
-                    DiscountedPrice = pv.DiscountedPrice, // Bỏ ?? vì non-nullable
+                    OriginalPrice = pv.OriginalPrice,
+                    DiscountedPrice = pv.DiscountedPrice,
                     StockQty = pv.StockQty,
                     ImageUrl = pv.ImageUrl,
                     ColorName = pv.Color?.ColorName ?? string.Empty,
                     SizeName = pv.Size?.SizeName ?? string.Empty,
                     MaterialName = pv.Material?.MaterialName ?? string.Empty,
                     UnitName = pv.Unit?.UnitName ?? string.Empty
-                }).ToList() ?? new List<TomsFurnitureBackend.VModels.ProductVModel.ProductVariantGetVModel>()
+                }).ToList() ?? new List<ProductVModel.ProductVariantGetVModel>()
             };
         }
     }
