@@ -3,30 +3,43 @@ using TomsFurnitureBackend.VModels;
 
 namespace TomsFurnitureBackend.Mappings
 {
-    public static class UnitMapping
+    public static class UnitExtensions
     {
-        public static UnitGetVModel ModelToVModel (Unit model)
-        {
-            return new UnitGetVModel
-            {
-                Id = model.Id,
-                UnitName = model.UnitName,
-                Description = model.Description,
-                IsActive = model.IsActive,
-                CreatedDate = model.CreatedDate,
-                UpdatedDate = model.UpdatedDate,
-                CreatedBy = model.CreatedBy,
-                UpdatedBy = model.UpdatedBy,
-            };
-        }
-        public static Unit VModelToModel (UnitCreateVModel vModel)
+        // Ánh xạ từ UnitCreateVModel sang Entity Unit (cho hàm thêm)
+        public static Unit ToEntity(this UnitCreateVModel model)
         {
             return new Unit
             {
-                UnitName = vModel.UnitName,
-                Description = vModel.Description,
-                IsActive = vModel.IsActive,
+                UnitName = model.UnitName,
+                Description = model.Description,
+                IsActive = model.IsActive,
                 CreatedDate = DateTime.Now,
+            };
+        }
+
+        // Cập nhật Entity Unit từ UnitUpdateVModel (cho hàm cập nhật)
+        public static void UpdateEntity(this Unit entity, UnitUpdateVModel model)
+        {
+
+            entity.UnitName = model.UnitName;
+            entity.Description = model.Description;
+            entity.IsActive = model.IsActive ?? true;
+            entity.UpdatedDate = DateTime.Now;
+        }
+
+        // Ánh xạ từ Entity Unit sang UnitGetVModel (cho hàm get)
+        public static UnitGetVModel ToGetVModel(this Unit entity)
+        {
+            return new UnitGetVModel
+            {
+                Id = entity.Id,
+                UnitName = entity.UnitName,
+                Description = entity.Description,
+                IsActive = entity.IsActive,
+                CreatedDate = entity.CreatedDate,
+                UpdatedDate = entity.UpdatedDate,
+                CreatedBy = entity.CreatedBy,
+                UpdatedBy = entity.UpdatedBy,
             };
         }
     }
