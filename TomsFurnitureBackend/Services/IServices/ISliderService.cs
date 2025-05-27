@@ -6,7 +6,7 @@ namespace TomsFurnitureBackend.Services.Interfaces
 {
     public interface ISliderService
     {
-        
+
         Task<List<SliderGetVModel>> GetAllAsync(); // Lấy tất cả Slider
         Task<SliderGetVModel>? GetByIdAsync(int id); // Lấy theo Slider theo ID 
         Task<ResponseResult> CreateAsync(SliderCreateVModel model, string imageUrl); // Tạo Slider
