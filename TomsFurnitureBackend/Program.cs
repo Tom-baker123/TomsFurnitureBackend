@@ -22,6 +22,7 @@ builder.Services.AddDbContext<TomfurnitureContext>(options =>
     options.UseSqlServer(connectionString));
 
 //3. Services
+builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IUnitService, UnitService>();
 builder.Services.AddScoped<ISliderService, SliderService>();
