@@ -17,7 +17,7 @@ namespace TomsFurnitureBackend.Extensions
                 CategoryId = model.CategoryId,
                 CountriesId = model.CountriesId,
                 SupplierId = model.SupplierId,
-                IsActive = model.IsActive ?? true,
+                IsActive = true,
                 CreatedDate = DateTime.UtcNow,
                 ViewCount = 0,
                 ProductVariants = model.ProductVariants.Select(pv => pv.ToEntity()).ToList()
@@ -38,7 +38,7 @@ namespace TomsFurnitureBackend.Extensions
                 SizeId = model.SizeId,
                 MaterialId = model.MaterialId,
                 UnitId = model.UnitId,
-                IsActive = model.IsActive ?? true,
+                IsActive = true,
                 CreatedDate = DateTime.UtcNow
             };
         }

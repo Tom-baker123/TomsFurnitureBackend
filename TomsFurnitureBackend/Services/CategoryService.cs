@@ -42,11 +42,6 @@ namespace TomsFurnitureBackend.Services
                 return "Descriptions must be less than 255 characters.";
             }
 
-            // Kiểm tra trạng thái hoạt động (IsActive) phải là true hoặc false
-            if (model.IsActive.HasValue && model.IsActive != true && model.IsActive != false) { 
-                return "IsActive must be true or false.";
-            }
-
             return string.Empty; // Trả về chuỗi rỗng nếu không có lỗi
         }
         // ----- [Validation phương thức tạo mới danh mục] -------------------------

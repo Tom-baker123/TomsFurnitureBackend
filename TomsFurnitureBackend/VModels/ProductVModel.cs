@@ -26,14 +26,12 @@ namespace TomsFurnitureBackend.VModels
             public int? SupplierId { get; set; }
 
 
-            public bool? IsActive { get; set; }
-
-
             public List<ProductVariantCreateVModel> ProductVariants { get; set; } = new List<ProductVariantCreateVModel>();
         }
 
         public class ProductUpdateVModel : ProductCreateVModel
         {
+            public bool? IsActive { get; set; }
 
             public int Id { get; set; }
         }
@@ -79,7 +77,7 @@ namespace TomsFurnitureBackend.VModels
             public int UnitId { get; set; }
 
 
-            public bool? IsActive { get; set; }
+            // public bool? IsActive { get; set; }
         }
 
         public class ProductVariantGetVModel

@@ -12,7 +12,7 @@ namespace TomsFurnitureBackend.Mappings
             {
                 UnitName = model.UnitName,
                 Description = model.Description,
-                IsActive = model.IsActive,
+                IsActive = true,
                 CreatedDate = DateTime.Now,
             };
         }
