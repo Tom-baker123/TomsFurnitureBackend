@@ -13,7 +13,7 @@ namespace TomsFurnitureBackend.Mappings
             return new Category { 
                 CategoryName = model.CategoryName,
                 Descriptions = model.Descriptions,
-                IsActive = model.IsActive,
+                IsActive = true,
                 CreatedDate = DateTime.UtcNow,
             };
         }

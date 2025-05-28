@@ -4,14 +4,14 @@
     public class CategoryCreateVModel
     {
         public string? CategoryName { get; set; }
-        public string? Descriptions { get; set; }
-        public bool? IsActive { get; set; }
+        public string? Descriptions { get; set; } 
     }
 
     // UpdateVModel - CreateVModel: ViewModel để cập nhật danh mục sản phẩm, kế thừa từ CreateVModel và thêm Id
     public class CategoryUpdateVModel : CategoryCreateVModel
     {
         public int Id { get; set; }
+        public bool? IsActive { get; set; }
     }
 
     // GetVModel - UpdateVModel: ViewModel để lấy thông tin danh mục, bao gồm các trường bổ sung

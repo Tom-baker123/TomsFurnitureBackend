@@ -79,7 +79,7 @@ namespace TomsFurnitureBackend.Services
             return result;
         }
 
-        public async Task<SliderGetVModel?> GetByIdAsync(int id)
+        public async Task<SliderGetVModel>? GetByIdAsync(int id)
         {
             var slider = await _context.Sliders
                 //.Include(s => s.Product) // nếu bạn cần include Product

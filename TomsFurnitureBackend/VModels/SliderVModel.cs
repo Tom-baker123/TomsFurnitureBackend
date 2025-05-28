@@ -10,12 +10,12 @@
         public bool? IsPoster { get; set; }
         public string? Position { get; set; }
         public int DisplayOrder { get; set; }
-        public bool? IsActive { get; set; }
         public int? ProductId { get; set; }
     }
 
     public class SliderUpdateVModel : SliderCreateVModel
     {
+        public bool? IsActive { get; set; }
         public int Id { get; set; }
     }
 

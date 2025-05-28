@@ -17,7 +17,7 @@ namespace TomsFurnitureBackend.Extensions
                 IsPoster = model.IsPoster,
                 Position = model.Position,
                 DisplayOrder = model.DisplayOrder,
-                IsActive = model.IsActive,
+                IsActive = true,
                 ProductId = model.ProductId,
                 CreatedDate = DateTime.UtcNow,
             };

@@ -6,11 +6,12 @@
 
         public string? Description { get; set; }
 
-        public bool? IsActive { get; set; }
+        
     }
     public class UnitUpdateVModel : UnitCreateVModel
     {
         public int Id { get; set; }
+        public bool? IsActive { get; set; }
     }
     public class UnitGetVModel : UnitUpdateVModel
     {

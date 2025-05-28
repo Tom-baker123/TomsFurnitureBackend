@@ -46,7 +46,7 @@ namespace TomsFurnitureBackend.Controllers
         }
         // Cập nhật đơn vị
         [HttpPost]
-        public async Task<IActionResult> Create([FromForm] UnitCreateVModel vModel)
+        public async Task<IActionResult> Create(UnitCreateVModel vModel)
         {
             try
             {
