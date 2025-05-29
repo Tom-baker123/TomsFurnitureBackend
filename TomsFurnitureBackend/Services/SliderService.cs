@@ -18,7 +18,7 @@ namespace TomsFurnitureBackend.Services
 
         public SliderService(TomfurnitureContext context)
         {
-            _context = context;
+            _context = context ?? throw new ArgumentNullException(nameof(context));
         }
         public async Task<ResponseResult> CreateAsync(SliderCreateVModel model, string imageUrl)
         {

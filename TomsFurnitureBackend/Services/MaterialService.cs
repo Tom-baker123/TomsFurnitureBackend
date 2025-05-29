@@ -16,7 +16,7 @@ namespace TomsFurnitureBackend.Services
         // Constructor nhận DbContext qua DI
         public MaterialService(TomfurnitureContext context)
         {
-            _context = context;
+            _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
         // Validation cho phương thức tạo mới vật liệu
