@@ -21,7 +21,7 @@ namespace TomsFurnitureBackend.Services
         // Constructor nhận DbContext
         public CategoryService(TomfurnitureContext context)
         {
-            _context = context;
+            _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
         // ----- [Validation phương thức tạo mới danh mục] -------------------------

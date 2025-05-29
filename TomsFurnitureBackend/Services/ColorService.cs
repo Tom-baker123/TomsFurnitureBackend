@@ -16,7 +16,7 @@ namespace TomsFurnitureBackend.Services
         // Constructor nhận DbContext cho việc truy cập dữ liệu
         public ColorService(TomfurnitureContext context)
         {
-            _context = context;
+            _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
         // ----- [Validation phương thức tạo mới màu sắc] -------------------------

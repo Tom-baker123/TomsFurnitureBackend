@@ -13,7 +13,7 @@ namespace TomsFurnitureBackend.Services
         private readonly TomfurnitureContext _context;
         public UnitService(TomfurnitureContext context)
         {
-            _context = context; // Chỉ lấy sang VModel để sử dụng trong Service này
+            _context = context ?? throw new ArgumentNullException(nameof(context)); // Chỉ lấy sang VModel để sử dụng trong Service này
         }
 
         // Validation Phương thức thêm 

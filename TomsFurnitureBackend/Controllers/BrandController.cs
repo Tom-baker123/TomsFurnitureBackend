@@ -106,14 +106,48 @@ namespace TomsFurnitureBackend.Controllers
         {
             try
             {
-                // B1: Gọi service để xóa thương hiệu theo ID
+                // B1: Tìm thương hiệu để lấy ảnh URL cũ
+                var brand = await _context.Brands
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(b => b.Id == id);
+                if (brand == null) {
+                    return NotFound($"Not found ID {id} in category");
+                }
+
+                // B2: Xóa ảnh cũ trên Cloudinary nếu tồn tại
+                if (!string.IsNullOrEmpty(brand.ImageUrl)) {
+                    try
+                    {
+                        // Trích xuất PublicId từ ImageUrl
+                        var uri = new Uri(brand.ImageUrl);
+                        // Lấy tên ảnh từ url
+                        var publicId = Path.GetFileNameWithoutExtension(uri.AbsolutePath);
+
+                        // Xóa ảnh trên cloudinary
+                        var deletionParams = new DeletionParams(publicId)
+                        {
+                            ResourceType = ResourceType.Image
+                        };
+
+                        var deletionResult = await _cloudinary.DestroyAsync(deletionParams);
+                        if(deletionResult.Error != null) {
+                            _logger.LogWarning("Không thể xóa ảnh trên Cloudinary: {ErrorMessage}", deletionResult.Error.Message);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        return StatusCode(500, new { Message = "An error occurred while deleting the brand.", Details = ex.Message });
+                    }
+                }
+
+                // B3: Gọi service để xóa thương hiệu theo ID
                 var result = await _brandService.DeleteAsync(id);
                 if (!result.IsSuccess)
                 {
                     return BadRequest(result.Message);
                 }
 
-                // B2: Trả về kết quả thành công
+                // B4: Trả về kết quả thành công
                 return Ok(result);
             }
             catch (Exception ex)

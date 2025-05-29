@@ -14,7 +14,7 @@ namespace TomsFurnitureBackend.Services
 
         public ProductService(TomfurnitureContext context)
         {
-            _context = context;
+            _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
         // Kiểm tra validation cho Product
