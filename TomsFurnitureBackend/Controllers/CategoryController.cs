@@ -120,7 +120,7 @@ namespace TomsFurnitureBackend.Controllers
                 // B2: Tìm danh mục để lấy URL ảnh cũ
                 var category = await _context.Categories
                     .AsNoTracking()
-                    .FirstOrDefaultAsync(c => c.Id == id);
+                    .FirstOrDefaultAsync(c => c.Id == categoryVModel.Id);
                 if (category == null) {
                     return NotFound($"Not found ID {id} in category");
                 }
@@ -148,6 +148,7 @@ namespace TomsFurnitureBackend.Controllers
                             {
                                 ResourceType = ResourceType.Image
                             };
+
 
                             var deletionResult = await _cloudinary.DestroyAsync(deletionParams);
                             if (deletionResult.Error != null)
