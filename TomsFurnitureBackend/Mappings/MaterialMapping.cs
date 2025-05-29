@@ -31,6 +31,7 @@ namespace TomsFurnitureBackend.Mappings
         // Chuyển từ Entity Material sang MaterialGetVModel
         public static MaterialGetVModel ToGetVModel(this Material entity) {
             // Tạo ViewModel từ entity
+            
             return new MaterialGetVModel
             {
                 Id = entity.Id,
