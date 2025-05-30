@@ -39,7 +39,7 @@ namespace TomsFurnitureBackend.Services
             }
             if (model.CountriesId.HasValue && !await _context.Countries.AnyAsync(c => c.Id == model.CountriesId))
             {
-                return new ErrorResponseResult($"Quốc gia với ID {model.CountriesId} không tồn tại.");
+                return new ErrorResponseResult($"xuất xứ với ID {model.CountriesId} không tồn tại.");
             }
             if (model.SupplierId.HasValue && !await _context.Suppliers.AnyAsync(s => s.Id == model.SupplierId))
             {

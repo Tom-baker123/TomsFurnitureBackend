@@ -41,7 +41,7 @@ namespace TomsFurnitureBackend.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { Message = "An error occurred while retrieving the unit." });
+                return StatusCode(500, new { Message = $"An error occurred while retrieving the unit: {ex.Message}" });
             }
         }
         // Cập nhật đơn vị
@@ -60,7 +60,7 @@ namespace TomsFurnitureBackend.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { Message = "An error occurred while creating the unit." });
+                return StatusCode(500, new { Message = $"An error occurred while creating the unit: {ex.Message}" });
             }
         }
 
