@@ -77,17 +77,11 @@ namespace TomsFurnitureBackend.Controllers
         }
 
         // [4.] Cập nhật vai trò
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateRole(int id, [FromBody] RoleUpdateVModel roleVModel)
+        [HttpPut]
+        public async Task<IActionResult> UpdateRole([FromForm] RoleUpdateVModel roleVModel)
         {
             try
             {
-                // Kiểm tra ID hợp lệ
-                if (id != roleVModel.Id)
-                {
-                    return BadRequest("ID in URL does not match ID in model.");
-                }
-
                 // B1: Gọi service để cập nhật vai trò
                 var result = await _roleService.UpdateAsync(roleVModel);
                 if (!result.IsSuccess)
