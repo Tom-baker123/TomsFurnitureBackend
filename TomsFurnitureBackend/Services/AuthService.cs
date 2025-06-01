@@ -29,7 +29,7 @@ namespace TomsFurnitureBackend.Services
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
         }
-
+        // Xác thực thông tin đăng nhập của người dùng
         private static string ValidateLogin(LoginVModel model)
         {
             if (string.IsNullOrWhiteSpace(model.Email))
@@ -50,7 +50,7 @@ namespace TomsFurnitureBackend.Services
 
             return string.Empty;
         }
-
+        // Xác thực thông tin đăng ký của người dùng
         private static string ValidateRegister(RegisterVModel model)
         {
             if (string.IsNullOrWhiteSpace(model.UserName))
@@ -88,7 +88,7 @@ namespace TomsFurnitureBackend.Services
 
             return string.Empty;
         }
-
+        // Xác thực email
         private static string ValidateEmail(string email)
         {
             if (string.IsNullOrWhiteSpace(email))
@@ -104,7 +104,7 @@ namespace TomsFurnitureBackend.Services
 
             return string.Empty;
         }
-
+        // Xác thực thông tin OTP
         private static string ValidateOtp(ConfirmOtpVModel model)
         {
             if (string.IsNullOrWhiteSpace(model.Email))
@@ -125,7 +125,7 @@ namespace TomsFurnitureBackend.Services
 
             return string.Empty;
         }
-
+        // [1.] Đăng nhập người dùng
         public async Task<ResponseResult> LoginAsync(LoginVModel model, HttpContext httpContext)
         {
             try
@@ -184,7 +184,7 @@ namespace TomsFurnitureBackend.Services
                 return new ErrorResponseResult($"Đã xảy ra lỗi trong quá trình đăng nhập: {ex.Message}");
             }
         }
-
+        // [2.] Đăng xuất người dùng
         public async Task<ResponseResult> LogoutAsync(HttpContext httpContext)
         {
             try
@@ -198,7 +198,7 @@ namespace TomsFurnitureBackend.Services
                 return new ErrorResponseResult($"Đã xảy ra lỗi trong quá trình đăng xuất: {ex.Message}");
             }
         }
-
+        // [3.] Lấy trạng thái xác thực của người dùng
         public async Task<AuthStatusVModel> GetAuthStatusAsync(ClaimsPrincipal user, HttpContext httpContext)
         {
             try
@@ -241,7 +241,7 @@ namespace TomsFurnitureBackend.Services
                 };
             }
         }
-
+        // [4.] Đăng ký người dùng mới
         public async Task<ResponseResult> RegisterAsync(RegisterVModel model)
         {
             try
@@ -306,7 +306,7 @@ namespace TomsFurnitureBackend.Services
                 return new ErrorResponseResult($"Đã xảy ra lỗi trong quá trình đăng ký: {ex.Message}");
             }
         }
-
+        // [5.] Xác nhận OTP để kích hoạt tài khoản người dùng
         public async Task<ResponseResult> VerifyOtpAsync(ConfirmOtpVModel model)
         {
             try
@@ -370,7 +370,7 @@ namespace TomsFurnitureBackend.Services
                 return new ErrorResponseResult($"Đã xảy ra lỗi trong quá trình xác nhận OTP: {ex.Message}");
             }
         }
-
+        // [6.] Gửi lại mã OTP cho người dùng
         public async Task<ResponseResult> ResendOtpAsync(string email)
         {
             try
@@ -438,7 +438,7 @@ namespace TomsFurnitureBackend.Services
                 return new ErrorResponseResult($"Đã xảy ra lỗi trong quá trình gửi lại OTP: {ex.Message}");
             }
         }
-
+        // Tạo mã OTP ngẫu nhiên
         private string GenerateOtp()
         {
             var random = new Random();
