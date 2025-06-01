@@ -29,7 +29,7 @@ namespace TomsFurnitureBackend.Services
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
         }
-        // Xác thực thông tin đăng nhập của người dùng
+
         private static string ValidateLogin(LoginVModel model)
         {
             if (string.IsNullOrWhiteSpace(model.Email))
@@ -50,7 +50,7 @@ namespace TomsFurnitureBackend.Services
 
             return string.Empty;
         }
-        // Xác thực thông tin đăng ký của người dùng
+
         private static string ValidateRegister(RegisterVModel model)
         {
             if (string.IsNullOrWhiteSpace(model.UserName))
@@ -88,7 +88,7 @@ namespace TomsFurnitureBackend.Services
 
             return string.Empty;
         }
-        // Xác thực email
+
         private static string ValidateEmail(string email)
         {
             if (string.IsNullOrWhiteSpace(email))
@@ -104,7 +104,7 @@ namespace TomsFurnitureBackend.Services
 
             return string.Empty;
         }
-        // Xác thực thông tin OTP
+
         private static string ValidateOtp(ConfirmOtpVModel model)
         {
             if (string.IsNullOrWhiteSpace(model.Email))
@@ -125,7 +125,7 @@ namespace TomsFurnitureBackend.Services
 
             return string.Empty;
         }
-        // [1.] Đăng nhập người dùng
+
         public async Task<ResponseResult> LoginAsync(LoginVModel model, HttpContext httpContext)
         {
             try
@@ -184,7 +184,7 @@ namespace TomsFurnitureBackend.Services
                 return new ErrorResponseResult($"Đã xảy ra lỗi trong quá trình đăng nhập: {ex.Message}");
             }
         }
-        // [2.] Đăng xuất người dùng
+
         public async Task<ResponseResult> LogoutAsync(HttpContext httpContext)
         {
             try
@@ -198,7 +198,7 @@ namespace TomsFurnitureBackend.Services
                 return new ErrorResponseResult($"Đã xảy ra lỗi trong quá trình đăng xuất: {ex.Message}");
             }
         }
-        // [3.] Lấy trạng thái xác thực của người dùng
+
         public async Task<AuthStatusVModel> GetAuthStatusAsync(ClaimsPrincipal user, HttpContext httpContext)
         {
             try
@@ -241,7 +241,7 @@ namespace TomsFurnitureBackend.Services
                 };
             }
         }
-        // [4.] Đăng ký người dùng mới
+
         public async Task<ResponseResult> RegisterAsync(RegisterVModel model)
         {
             try
@@ -271,13 +271,13 @@ namespace TomsFurnitureBackend.Services
                 }
 
                 _logger.LogInformation("Tạo người dùng mới cho {Email}", normalizedEmail);
-                var user = model.ToUserEntity(role.Id); // Sử dụng extension để ánh xạ
+                var user = model.ToUserEntity(role.Id);
                 _context.Users.Add(user);
                 await _context.SaveChangesAsync();
                 _logger.LogInformation("Người dùng được tạo thành công: {Email}, UserId: {UserId}", normalizedEmail, user.Id);
 
                 var otp = GenerateOtp();
-                var otpEntity = AuthExtensions.ToConfirmOtpEntity(user.Id, otp); // Sử dụng extension để tạo OTP
+                var otpEntity = AuthExtensions.ToConfirmOtpEntity(user.Id, otp);
                 _context.ConfirmOtps.Add(otpEntity);
                 await _context.SaveChangesAsync();
                 _logger.LogInformation("Tạo OTP cho {Email}: {Otp}, hết hạn lúc {Expiry}", normalizedEmail, otp, otpEntity.ExpiredDate);
@@ -306,7 +306,7 @@ namespace TomsFurnitureBackend.Services
                 return new ErrorResponseResult($"Đã xảy ra lỗi trong quá trình đăng ký: {ex.Message}");
             }
         }
-        // [5.] Xác nhận OTP để kích hoạt tài khoản người dùng
+
         public async Task<ResponseResult> VerifyOtpAsync(ConfirmOtpVModel model)
         {
             try
@@ -339,7 +339,9 @@ namespace TomsFurnitureBackend.Services
                 }
 
                 var otpData = await _context.ConfirmOtps
-                    .FirstOrDefaultAsync(o => o.UserId == user.Id && o.CheckActive == false && o.ExpiredDate >= DateTime.UtcNow);
+                    .Where(o => o.UserId == user.Id && o.CheckActive == false && o.ExpiredDate >= DateTime.UtcNow)
+                    .OrderByDescending(o => o.CreatedDate)
+                    .FirstOrDefaultAsync();
 
                 if (otpData == null)
                 {
@@ -347,10 +349,28 @@ namespace TomsFurnitureBackend.Services
                     return new ErrorResponseResult("Mã OTP không tồn tại hoặc đã hết hạn. Vui lòng yêu cầu gửi lại OTP.");
                 }
 
+                // Đếm số lần nhập sai OTP trong 30 phút gần nhất
+                var failedAttempts = await _context.ConfirmOtps
+                    .Where(o => o.UserId == user.Id && o.CheckActive == false && o.ExpiredDate >= DateTime.UtcNow)
+                    .CountAsync();
+
+                if (failedAttempts >= 3)
+                {
+                    _logger.LogWarning("Vượt quá 3 lần nhập sai OTP cho email: {Email}", normalizedEmail);
+                    return new ErrorResponseResult("Bạn đã nhập sai mã OTP quá 3 lần, hãy bấm gửi lại mã OTP để hoàn tất việc đăng ký.");
+                }
+
                 if (otpData.Otpcode != model.Otp.Trim())
                 {
                     _logger.LogWarning("OTP không hợp lệ cho email: {Email}, OTP cung cấp: {ProvidedOtp}, OTP mong đợi: {ExpectedOtp}",
                         normalizedEmail, model.Otp, otpData.Otpcode);
+
+                    // Tạo bản ghi mới để ghi nhận lần nhập sai
+                    var failedOtpEntity = AuthExtensions.ToConfirmOtpEntity(user.Id, otpData.Otpcode);
+                    _context.ConfirmOtps.Add(failedOtpEntity);
+                    await _context.SaveChangesAsync();
+                    _logger.LogInformation("Ghi nhận lần nhập sai OTP cho {Email}, số lần sai hiện tại: {FailedAttempts}", normalizedEmail, failedAttempts + 1);
+
                     return new ErrorResponseResult("Mã OTP không hợp lệ.");
                 }
 
@@ -370,7 +390,7 @@ namespace TomsFurnitureBackend.Services
                 return new ErrorResponseResult($"Đã xảy ra lỗi trong quá trình xác nhận OTP: {ex.Message}");
             }
         }
-        // [6.] Gửi lại mã OTP cho người dùng
+
         public async Task<ResponseResult> ResendOtpAsync(string email)
         {
             try
@@ -402,6 +422,19 @@ namespace TomsFurnitureBackend.Services
                     return new ErrorResponseResult("Tài khoản đã được kích hoạt.");
                 }
 
+                // Kiểm tra thời gian gửi OTP gần nhất
+                var latestOtp = await _context.ConfirmOtps
+                    .Where(o => o.UserId == user.Id)
+                    .OrderByDescending(o => o.CreatedDate)
+                    .FirstOrDefaultAsync();
+
+                if (latestOtp != null && latestOtp.CreatedDate.HasValue && latestOtp.CreatedDate.Value.AddMinutes(2) > DateTime.UtcNow)
+                {
+                    _logger.LogWarning("Yêu cầu gửi lại OTP quá sớm cho {Email}. Vui lòng đợi thêm.", normalizedEmail);
+                    return new ErrorResponseResult("Bạn đã gửi mã OTP thành công, vui lòng đợi sau 2 phút để lấy lại OTP.");
+                }
+
+                // Vô hiệu hóa các OTP cũ
                 var oldOtps = await _context.ConfirmOtps
                     .Where(o => o.UserId == user.Id && o.CheckActive == false)
                     .ToListAsync();
@@ -411,7 +444,7 @@ namespace TomsFurnitureBackend.Services
                 }
 
                 var otp = GenerateOtp();
-                var otpEntity = AuthExtensions.ToConfirmOtpEntity(user.Id, otp); // Sử dụng extension để tạo OTP
+                var otpEntity = AuthExtensions.ToConfirmOtpEntity(user.Id, otp);
                 _context.ConfirmOtps.Add(otpEntity);
                 await _context.SaveChangesAsync();
                 _logger.LogInformation("Tạo OTP mới cho {Email}: {Otp}, hết hạn lúc {Expiry}", normalizedEmail, otp, otpEntity.ExpiredDate);
@@ -438,7 +471,7 @@ namespace TomsFurnitureBackend.Services
                 return new ErrorResponseResult($"Đã xảy ra lỗi trong quá trình gửi lại OTP: {ex.Message}");
             }
         }
-        // Tạo mã OTP ngẫu nhiên
+
         private string GenerateOtp()
         {
             var random = new Random();
