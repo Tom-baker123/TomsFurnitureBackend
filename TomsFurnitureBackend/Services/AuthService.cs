@@ -17,139 +17,149 @@ using TomsFurnitureBackend.VModels;
 
 namespace TomsFurnitureBackend.Services
 {
+    // Lớp AuthService triển khai giao diện IAuthService để xử lý các chức năng xác thực
     public class AuthService : IAuthService
     {
-        private readonly TomfurnitureContext _context;
-        private readonly ILogger<AuthService> _logger;
-        private readonly IEmailService _emailService;
+        private readonly TomfurnitureContext _context; // Đối tượng context để truy cập cơ sở dữ liệu
+        private readonly ILogger<AuthService> _logger; // Logger để ghi log các sự kiện và lỗi
+        private readonly IEmailService _emailService; // Dịch vụ gửi email để gửi OTP
 
+        // Constructor: Khởi tạo các dependency cần thiết
         public AuthService(TomfurnitureContext context, ILogger<AuthService> logger, IEmailService emailService)
         {
-            _context = context ?? throw new ArgumentNullException(nameof(context));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
+            _context = context ?? throw new ArgumentNullException(nameof(context)); // Kiểm tra context không null
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger)); // Kiểm tra logger không null
+            _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService)); // Kiểm tra emailService không null
         }
-
+        // Hàm ValidateLogin: Xác thực dữ liệu đầu vào cho đăng nhập
         private static string ValidateLogin(LoginVModel model)
         {
+            // B1: Kiểm tra email có rỗng hoặc chỉ chứa khoảng trắng
             if (string.IsNullOrWhiteSpace(model.Email))
             {
                 return "Email là bắt buộc.";
             }
-
+            // B2: Kiểm tra định dạng email bằng regex
             const string emailRegex = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
             if (!Regex.IsMatch(model.Email.Trim(), emailRegex))
             {
                 return "Định dạng email không hợp lệ.";
             }
-
+            // B3: Kiểm tra mật khẩu có rỗng hoặc chỉ chứa khoảng trắng
             if (string.IsNullOrWhiteSpace(model.Password))
             {
                 return "Mật khẩu là bắt buộc.";
             }
-
+            // B4: Nếu tất cả hợp lệ, trả về chuỗi rỗng
             return string.Empty;
         }
-
+        // Hàm ValidateRegister: Xác thực dữ liệu đầu vào cho đăng ký
         private static string ValidateRegister(RegisterVModel model)
         {
+            // B1: Kiểm tra tên người dùng có rỗng
             if (string.IsNullOrWhiteSpace(model.UserName))
             {
                 return "Tên người dùng là bắt buộc.";
             }
-
+            // B2: Kiểm tra email có rỗng
             if (string.IsNullOrWhiteSpace(model.Email))
             {
                 return "Email là bắt buộc.";
             }
-
+            // B3: Kiểm tra định dạng email bằng regex
             const string emailRegex = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
             if (!Regex.IsMatch(model.Email.Trim(), emailRegex))
             {
                 return "Định dạng email không hợp lệ.";
             }
-
+            // B4: Kiểm tra mật khẩu có rỗng
             if (string.IsNullOrWhiteSpace(model.Password))
             {
                 return "Mật khẩu là bắt buộc.";
             }
-
+            // B5: Kiểm tra độ dài mật khẩu tối thiểu
             if (model.Password.Length < 6)
             {
                 return "Mật khẩu phải có ít nhất 6 ký tự.";
             }
-
+            // B6: Kiểm tra giới tính (nếu có) phải là 'male' hoặc 'female'
             if (!string.IsNullOrWhiteSpace(model.Gender) &&
                 model.Gender.Trim().ToLower() != "male" &&
                 model.Gender.Trim().ToLower() != "female")
             {
                 return "Giới tính phải là 'Male' hoặc 'Female'.";
             }
-
+            // B7: Nếu tất cả hợp lệ, trả về chuỗi rỗng
             return string.Empty;
         }
-
+        // Hàm ValidateEmail: Xác thực email đầu vào
         private static string ValidateEmail(string email)
         {
+            // B1: Kiểm tra email có rỗng
             if (string.IsNullOrWhiteSpace(email))
             {
                 return "Email là bắt buộc.";
             }
-
+            // B2: Kiểm tra định dạng email bằng regex
             const string emailRegex = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
             if (!Regex.IsMatch(email.Trim(), emailRegex))
             {
                 return "Định dạng email không hợp lệ.";
             }
-
+            // B3: Nếu hợp lệ, trả về chuỗi rỗng
             return string.Empty;
         }
-
+        // Hàm ValidateOtp: Xác thực dữ liệu OTP đầu vào 
         private static string ValidateOtp(ConfirmOtpVModel model)
         {
+            // B1: Kiểm tra email có rỗng
             if (string.IsNullOrWhiteSpace(model.Email))
             {
                 return "Email là bắt buộc.";
             }
-
+            // B2: Kiểm tra định dạng email bằng regex
             const string emailRegex = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
             if (!Regex.IsMatch(model.Email.Trim(), emailRegex))
             {
                 return "Định dạng email không hợp lệ.";
             }
-
+            // B3: Kiểm tra OTP có rỗng
             if (string.IsNullOrWhiteSpace(model.Otp))
             {
                 return "OTP là bắt buộc.";
             }
-
+            // B4: Nếu hợp lệ, trả về chuỗi rỗng
             return string.Empty;
         }
-
+        // [1.] Hàm LoginAsync: Xử lý đăng nhập người dùng
         public async Task<ResponseResult> LoginAsync(LoginVModel model, HttpContext httpContext)
         {
             try
             {
+                // B1: Xác thực dữ liệu đầu vào
                 var validationResult = ValidateLogin(model);
                 if (!string.IsNullOrEmpty(validationResult))
                 {
                     return new ErrorResponseResult(validationResult);
                 }
-
+                // B2: Tìm người dùng trong cơ sở dữ liệu dựa trên email
                 var user = await _context.Users
                     .Include(u => u.Role)
                     .FirstOrDefaultAsync(u => u.Email.ToLower() == model.Email.ToLower());
 
+                // B3: Kiểm tra người dùng đã kích hoạt chưa
                 if (user == null || !user.IsActive.GetValueOrDefault())
                 {
                     return new ErrorResponseResult("Email không hợp lệ hoặc tài khoản chưa được kích hoạt.");
                 }
 
+                // B4: Kiểm tra mật khẩu bằng BCrypt
                 if (!BCrypt.Net.BCrypt.Verify(model.Password, user.PasswordHash))
                 {
                     return new ErrorResponseResult("Mật khẩu không hợp lệ.");
                 }
 
+                // B5: Tạo danh sách claims cho xác thực
                 var claims = new List<Claim>
                 {
                     new Claim(ClaimTypes.Name, user.UserName),
@@ -158,6 +168,7 @@ namespace TomsFurnitureBackend.Services
                     new Claim("Email", user.Email)
                 };
 
+                // B6: Tạo danh tính xác thực và thuộc tính xác thực
                 var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
                 var authProperties = new AuthenticationProperties
                 {
@@ -165,11 +176,13 @@ namespace TomsFurnitureBackend.Services
                     ExpiresUtc = DateTimeOffset.UtcNow.AddDays(7)
                 };
 
+                // B7: Đăng nhập người dùng bằng cookie authentication
                 await httpContext.SignInAsync(
                     CookieAuthenticationDefaults.AuthenticationScheme,
                     new ClaimsPrincipal(claimsIdentity),
                     authProperties);
 
+                // B8: Trả về kết quả thành công với thông tin người dùng
                 return new SuccessResponseResult(
                     new LoginResultVModel
                     {
@@ -180,49 +193,57 @@ namespace TomsFurnitureBackend.Services
             }
             catch (Exception ex)
             {
+                // B9: Ghi log lỗi và trả về kết quả lỗi
                 _logger.LogError("Lỗi trong quá trình đăng nhập: {Error}", ex.Message);
                 return new ErrorResponseResult($"Đã xảy ra lỗi trong quá trình đăng nhập: {ex.Message}");
             }
         }
-
+        // [2.] Hàm LogoutAsync: Xử lý đăng xuất người dùng
         public async Task<ResponseResult> LogoutAsync(HttpContext httpContext)
         {
             try
             {
+                // B1: Đăng xuất người dùng bằng cookie authentication
                 await httpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+
+                // B2: Trả về kết quả thành công
                 return new SuccessResponseResult(null, "Đăng xuất thành công.");
             }
             catch (Exception ex)
             {
+                // B3: Ghi log lỗi và trả về kết quả lỗi
                 _logger.LogError("Lỗi trong quá trình đăng xuất: {Error}", ex.Message);
                 return new ErrorResponseResult($"Đã xảy ra lỗi trong quá trình đăng xuất: {ex.Message}");
             }
         }
 
+        // [3.] Hàm GetAuthStatusAsync: Kiểm tra trạng thái xác thực của người dùng
         public async Task<AuthStatusVModel> GetAuthStatusAsync(ClaimsPrincipal user, HttpContext httpContext)
         {
             try
             {
+                // B1: Kiểm tra người dùng đã xác thực chưa
                 if (user.Identity?.IsAuthenticated != true)
                 {
                     return new AuthStatusVModel { IsAuthenticated = false, Message = "Người dùng chưa được xác thực." };
                 }
 
+                // B2: Lấy ID người dùng từ claims
                 var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (string.IsNullOrEmpty(userId))
                 {
                     return new AuthStatusVModel { IsAuthenticated = false, Message = "Phiên người dùng không hợp lệ." };
                 }
-
+                // B3: Tìm người dùng trong cơ sở dữ liệu dựa trên ID
                 var dbUser = await _context.Users
                     .Include(u => u.Role)
                     .FirstOrDefaultAsync(u => u.Id == int.Parse(userId));
-
+                // B4: Kiểm tra người dùng có tồn tại không
                 if (dbUser == null)
                 {
                     return new AuthStatusVModel { IsAuthenticated = false, Message = "Không tìm thấy người dùng." };
                 }
-
+                // B5: Trả về trạng thái xác thực với thông tin người dùng
                 return new AuthStatusVModel
                 {
                     IsAuthenticated = true,
@@ -233,6 +254,7 @@ namespace TomsFurnitureBackend.Services
             }
             catch (Exception ex)
             {
+                // B6: Ghi log lỗi và trả về trạng thái lỗi
                 _logger.LogError("Lỗi khi kiểm tra trạng thái xác thực: {Error}", ex.Message);
                 return new AuthStatusVModel
                 {
@@ -242,26 +264,30 @@ namespace TomsFurnitureBackend.Services
             }
         }
 
+        // [4.] Hàm RegisterAsync: Xử lý đăng ký người dùng mới
         public async Task<ResponseResult> RegisterAsync(RegisterVModel model)
         {
             try
             {
+                // B1: Ghi log bắt đầu quá trình đăng ký
                 _logger.LogInformation("Bắt đầu đăng ký cho email: {Email}", model.Email);
+                // B2: Xác thực dữ liệu đầu vào
                 var validationResult = ValidateRegister(model);
                 if (!string.IsNullOrEmpty(validationResult))
                 {
                     _logger.LogWarning("Validate đăng ký thất bại cho {Email}: {Error}", model.Email, validationResult);
                     return new ErrorResponseResult(validationResult);
                 }
-
+                // B3: Chuẩn hóa email
                 var normalizedEmail = model.Email.Trim().ToLower();
                 _logger.LogInformation("Kiểm tra email đã tồn tại: {Email}", normalizedEmail);
+                // B4: Kiểm tra email đã được đăng ký chưa
                 if (await _context.Users.AnyAsync(u => u.Email.ToLower() == normalizedEmail))
                 {
                     _logger.LogWarning("Email đã được đăng ký: {Email}", normalizedEmail);
                     return new ErrorResponseResult("Email đã được đăng ký.");
                 }
-
+                // B5: Tìm vai trò 'User' trong cơ sở dữ liệu
                 _logger.LogInformation("Tìm vai trò 'User'");
                 var role = await _context.Roles.FirstOrDefaultAsync(r => r.RoleName == "User");
                 if (role == null)
@@ -269,13 +295,14 @@ namespace TomsFurnitureBackend.Services
                     _logger.LogError("Không tìm thấy vai trò 'User' trong cơ sở dữ liệu.");
                     return new ErrorResponseResult("Không tìm thấy vai trò 'User'.");
                 }
-
+                // B6: Tạo entity người dùng từ dữ liệu đăng ký
                 _logger.LogInformation("Tạo người dùng mới cho {Email}", normalizedEmail);
                 var user = model.ToUserEntity(role.Id);
                 _context.Users.Add(user);
                 await _context.SaveChangesAsync();
                 _logger.LogInformation("Người dùng được tạo thành công: {Email}, UserId: {UserId}", normalizedEmail, user.Id);
-
+                
+                // B7: Tạo và lưu OTP cho người dùng
                 var otp = GenerateOtp();
                 var otpEntity = AuthExtensions.ToConfirmOtpEntity(user.Id, otp);
                 _context.ConfirmOtps.Add(otpEntity);
@@ -284,12 +311,14 @@ namespace TomsFurnitureBackend.Services
 
                 try
                 {
+                    // B8: Gửi email chứa OTP
                     var emailBody = $"<p>Mã OTP của bạn là: <strong>{otp}</strong>. Mã này có hiệu lực trong 30 phút.</p>";
                     await _emailService.SendEmailAsync(model.Email, "Mã OTP của bạn", emailBody);
                     _logger.LogInformation("Gửi email OTP thành công tới {Email}", normalizedEmail);
                 }
                 catch (Exception ex)
                 {
+                    // B9: Nếu gửi email thất bại, xóa người dùng và OTP đã tạo
                     _logger.LogError("Gửi email OTP thất bại tới {Email}: {Error}", normalizedEmail, ex.Message);
                     _context.Users.Remove(user);
                     _context.ConfirmOtps.Remove(otpEntity);
@@ -298,34 +327,39 @@ namespace TomsFurnitureBackend.Services
                     return new ErrorResponseResult("Gửi email OTP thất bại. Vui lòng thử lại.");
                 }
 
+                // B10: Trả về kết quả thành công
                 return new SuccessResponseResult(null, "Đăng ký thành công. Vui lòng kiểm tra email để nhận mã OTP.");
             }
             catch (Exception ex)
             {
+                // B11: Ghi log lỗi và trả về kết quả lỗi
                 _logger.LogError("Lỗi trong quá trình đăng ký cho {Email}: {Error}", model.Email, ex.Message);
                 return new ErrorResponseResult($"Đã xảy ra lỗi trong quá trình đăng ký: {ex.Message}");
             }
         }
-
+        // [5.] Hàm VerifyOtpAsync: Xác nhận mã OTP để kích hoạt tài khoản
         public async Task<ResponseResult> VerifyOtpAsync(ConfirmOtpVModel model)
         {
             try
             {
+                // B1: Ghi log bắt đầu xác nhận OTP
                 _logger.LogInformation("Bắt đầu xác nhận OTP cho email: {Email}", model.Email);
 
+                // B2: Xác thực dữ liệu OTP đầu vào
                 var validationResult = ValidateOtp(model);
                 if (!string.IsNullOrEmpty(validationResult))
                 {
                     _logger.LogWarning("Xác nhận OTP thất bại cho {Email}: {Error}", model.Email, validationResult);
                     return new ErrorResponseResult(validationResult);
                 }
-
+                
+                // B3: Chuẩn hóa email
                 var normalizedEmail = model.Email.Trim().ToLower();
                 _logger.LogInformation("Chuẩn hóa email: {OriginalEmail} -> {NormalizedEmail}", model.Email, normalizedEmail);
-
+                // B4: Tìm người dùng dựa trên email
                 var user = await _context.Users
                     .FirstOrDefaultAsync(u => u.Email.ToLower() == normalizedEmail);
-
+                // B5: Kiểm tra tài khoản đã được kích hoạt chưa
                 if (user == null)
                 {
                     _logger.LogWarning("Không tìm thấy người dùng cho email: {Email}", normalizedEmail);
@@ -337,7 +371,7 @@ namespace TomsFurnitureBackend.Services
                     _logger.LogWarning("Người dùng đã được kích hoạt: {Email}", normalizedEmail);
                     return new ErrorResponseResult("Tài khoản đã được kích hoạt.");
                 }
-
+                // B6: Tìm OTP hợp lệ (chưa kích hoạt và chưa hết hạn)
                 var otpData = await _context.ConfirmOtps
                     .Where(o => o.UserId == user.Id && o.CheckActive == false && o.ExpiredDate >= DateTime.UtcNow)
                     .OrderByDescending(o => o.CreatedDate)
@@ -349,23 +383,24 @@ namespace TomsFurnitureBackend.Services
                     return new ErrorResponseResult("Mã OTP không tồn tại hoặc đã hết hạn. Vui lòng yêu cầu gửi lại OTP.");
                 }
 
-                // Đếm số lần nhập sai OTP trong 30 phút gần nhất
+                // B7: Đếm số lần nhập sai OTP trong 30 phút gần nhất
                 var failedAttempts = await _context.ConfirmOtps
                     .Where(o => o.UserId == user.Id && o.CheckActive == false && o.ExpiredDate >= DateTime.UtcNow)
                     .CountAsync();
 
+                // B8: Kiểm tra nếu số lần nhập sai vượt quá 3
                 if (failedAttempts >= 3)
                 {
                     _logger.LogWarning("Vượt quá 3 lần nhập sai OTP cho email: {Email}", normalizedEmail);
                     return new ErrorResponseResult("Bạn đã nhập sai mã OTP quá 3 lần, hãy bấm gửi lại mã OTP để hoàn tất việc đăng ký.");
                 }
-
+                // B9: Kiểm tra OTP có khớp không
                 if (otpData.Otpcode != model.Otp.Trim())
                 {
                     _logger.LogWarning("OTP không hợp lệ cho email: {Email}, OTP cung cấp: {ProvidedOtp}, OTP mong đợi: {ExpectedOtp}",
                         normalizedEmail, model.Otp, otpData.Otpcode);
 
-                    // Tạo bản ghi mới để ghi nhận lần nhập sai
+                    // B10: Ghi nhận lần nhập sai bằng cách tạo bản ghi OTP mới với cùng mã OTP
                     var failedOtpEntity = AuthExtensions.ToConfirmOtpEntity(user.Id, otpData.Otpcode);
                     _context.ConfirmOtps.Add(failedOtpEntity);
                     await _context.SaveChangesAsync();
@@ -374,6 +409,7 @@ namespace TomsFurnitureBackend.Services
                     return new ErrorResponseResult("Mã OTP không hợp lệ.");
                 }
 
+                // B11: Kích hoạt tài khoản nếu OTP khớp
                 _logger.LogInformation("Kích hoạt người dùng cho {Email}", normalizedEmail);
                 user.IsActive = true;
                 user.UpdatedDate = DateTime.UtcNow;
@@ -381,32 +417,34 @@ namespace TomsFurnitureBackend.Services
                 otpData.CheckActive = true;
                 await _context.SaveChangesAsync();
                 _logger.LogInformation("Người dùng được kích hoạt thành công: {Email}", normalizedEmail);
-
+                // B12: Trả về kết quả thành công
                 return new SuccessResponseResult(null, "Kích hoạt tài khoản thành công.");
             }
             catch (Exception ex)
             {
+                // B13: Ghi log lỗi và trả về kết quả lỗi
                 _logger.LogError("Lỗi trong quá trình xác nhận OTP cho {Email}: {Error}", model.Email, ex.Message);
                 return new ErrorResponseResult($"Đã xảy ra lỗi trong quá trình xác nhận OTP: {ex.Message}");
             }
         }
-
+        // [6.] Hàm ResendOtpAsync: Gửi lại mã OTP cho người dùng
         public async Task<ResponseResult> ResendOtpAsync(string email)
         {
             try
             {
+                // B1: Ghi log yêu cầu gửi lại OTP
                 _logger.LogInformation("Yêu cầu gửi lại OTP cho email: {Email}", email);
-
+                // B2: Xác thực email đầu vào
                 var validationResult = ValidateEmail(email);
                 if (!string.IsNullOrEmpty(validationResult))
                 {
                     _logger.LogWarning("Yêu cầu gửi lại OTP thất bại cho {Email}: {Error}", email, validationResult);
                     return new ErrorResponseResult(validationResult);
                 }
-
+                // B3: Chuẩn hóa email
                 var normalizedEmail = email.Trim().ToLower();
                 _logger.LogInformation("Chuẩn hóa email: {OriginalEmail} -> {NormalizedEmail}", email, normalizedEmail);
-
+                // B4: Tìm người dùng dựa trên email
                 var user = await _context.Users
                     .FirstOrDefaultAsync(u => u.Email.ToLower() == normalizedEmail);
 
@@ -415,26 +453,26 @@ namespace TomsFurnitureBackend.Services
                     _logger.LogWarning("Không tìm thấy người dùng cho email: {Email}", normalizedEmail);
                     return new ErrorResponseResult("Không tìm thấy người dùng.");
                 }
-
+                // B5: Kiểm tra tài khoản đã được kích hoạt chưa
                 if (user.IsActive == true)
                 {
                     _logger.LogWarning("Người dùng đã được kích hoạt: {Email}", normalizedEmail);
                     return new ErrorResponseResult("Tài khoản đã được kích hoạt.");
                 }
 
-                // Kiểm tra thời gian gửi OTP gần nhất
+                // B6: Kiểm tra thời gian gửi OTP gần nhất
                 var latestOtp = await _context.ConfirmOtps
                     .Where(o => o.UserId == user.Id)
                     .OrderByDescending(o => o.CreatedDate)
                     .FirstOrDefaultAsync();
-
+                // B7: Nếu OTP gần nhất được gửi trong vòng 2 phút, yêu cầu đợi
                 if (latestOtp != null && latestOtp.CreatedDate.HasValue && latestOtp.CreatedDate.Value.AddMinutes(2) > DateTime.UtcNow)
                 {
                     _logger.LogWarning("Yêu cầu gửi lại OTP quá sớm cho {Email}. Vui lòng đợi thêm.", normalizedEmail);
                     return new ErrorResponseResult("Bạn đã gửi mã OTP thành công, vui lòng đợi sau 2 phút để lấy lại OTP.");
                 }
 
-                // Vô hiệu hóa các OTP cũ
+                // B8: Vô hiệu hóa các OTP cũ (chưa kích hoạt)
                 var oldOtps = await _context.ConfirmOtps
                     .Where(o => o.UserId == user.Id && o.CheckActive == false)
                     .ToListAsync();
@@ -442,7 +480,7 @@ namespace TomsFurnitureBackend.Services
                 {
                     oldOtp.CheckActive = true;
                 }
-
+                // B9: Tạo OTP mới và lưu vào cơ sở dữ liệu
                 var otp = GenerateOtp();
                 var otpEntity = AuthExtensions.ToConfirmOtpEntity(user.Id, otp);
                 _context.ConfirmOtps.Add(otpEntity);
@@ -451,22 +489,26 @@ namespace TomsFurnitureBackend.Services
 
                 try
                 {
+                    // B10: Gửi email chứa OTP mới
                     var emailBody = $"<p>Mã OTP mới của bạn là: <strong>{otp}</strong>. Mã này có hiệu lực trong 30 phút.</p>";
                     await _emailService.SendEmailAsync(email, "Mã OTP mới của bạn", emailBody);
                     _logger.LogInformation("Gửi email OTP mới thành công tới {Email}", normalizedEmail);
                 }
                 catch (Exception ex)
                 {
+                    // B11: Nếu gửi email thất bại, xóa OTP mới
                     _logger.LogError("Gửi email OTP mới thất bại tới {Email}: {Error}", normalizedEmail, ex.Message);
                     _context.ConfirmOtps.Remove(otpEntity);
                     await _context.SaveChangesAsync();
                     return new ErrorResponseResult("Gửi email OTP mới thất bại. Vui lòng thử lại.");
                 }
 
+                // B12: Trả về kết quả thành công
                 return new SuccessResponseResult(null, "Gửi mã OTP mới thành công. Vui lòng kiểm tra email của bạn.");
             }
             catch (Exception ex)
             {
+                // B13: Ghi log lỗi và trả về kết quả lỗi
                 _logger.LogError("Lỗi trong quá trình gửi lại OTP cho {Email}: {Error}", email, ex.Message);
                 return new ErrorResponseResult($"Đã xảy ra lỗi trong quá trình gửi lại OTP: {ex.Message}");
             }
@@ -474,9 +516,13 @@ namespace TomsFurnitureBackend.Services
 
         private string GenerateOtp()
         {
+            // B1: Tạo số ngẫu nhiên 6 chữ số
             var random = new Random();
             var otp = random.Next(100000, 999999).ToString();
+            // B2: Ghi log mã OTP đã tạo
             _logger.LogInformation("Tạo OTP: {Otp}", otp);
+
+            // B3: Trả về mã OTP
             return otp;
         }
     }
