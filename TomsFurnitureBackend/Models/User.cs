@@ -37,6 +37,8 @@ public partial class User
 
     public virtual ICollection<Comment> Comments { get; set; } = new List<Comment>();
 
+    public virtual ICollection<ConfirmOtp> ConfirmOtps { get; set; } = new List<ConfirmOtp>();
+
     public virtual ICollection<Feedback> Feedbacks { get; set; } = new List<Feedback>();
 
     public virtual ICollection<News> News { get; set; } = new List<News>();
