@@ -143,5 +143,28 @@ namespace TomsFurnitureBackend.Extensions
                 Otp = otp.Otpcode
             };
         }
+
+        // Ánh xạ mới: User entity sang UserVModel
+        public static UserVModel ToUserVModel(this User entity)
+        {
+            if (entity == null)
+            {
+                throw new ArgumentNullException(nameof(entity), "User entity cannot be null.");
+            }
+
+            return new UserVModel
+            {
+                Id = entity.Id,
+                UserName = entity.UserName,
+                Email = entity.Email,
+                Gender = entity.Gender ? "male" : "female",
+                PhoneNumber = entity.PhoneNumber,
+                UserAddress = entity.UserAddress,
+                IsActive = entity.IsActive,
+                CreatedDate = entity.CreatedDate,
+                UpdatedDate = entity.UpdatedDate,
+                RoleName = entity.Role?.RoleName ?? "Unknown"
+            };
+        }
     }
 }

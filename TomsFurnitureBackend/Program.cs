@@ -24,6 +24,7 @@ builder.Services.AddDbContext<TomfurnitureContext>(options =>
     options.UseSqlServer(connectionString));
 
 //3. Services
+builder.Services.AddScoped<INewsService, NewsService>();
 builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
