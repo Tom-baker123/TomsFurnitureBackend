@@ -291,7 +291,7 @@ public partial class TomfurnitureContext : DbContext
 
             entity.Property(e => e.CreatedBy).HasMaxLength(255);
             entity.Property(e => e.CreatedDate).HasColumnType("datetime");
-            entity.Property(e => e.NewsAvatar).HasMaxLength(50);
+            entity.Property(e => e.NewsAvatar).HasMaxLength(255);
             entity.Property(e => e.Title).HasMaxLength(50);
             entity.Property(e => e.UpdatedBy).HasMaxLength(255);
             entity.Property(e => e.UpdatedDate).HasColumnType("datetime");

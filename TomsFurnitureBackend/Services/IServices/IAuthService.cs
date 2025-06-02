@@ -13,5 +13,10 @@ namespace TomsFurnitureBackend.Services.Interfaces
         Task<ResponseResult> RegisterAsync(RegisterVModel model);
         Task<ResponseResult> VerifyOtpAsync(ConfirmOtpVModel model);
         Task<ResponseResult> ResendOtpAsync(string email);
+
+        // Phương thức xử lý người dùng
+        Task<ResponseResult> GetAllUsersAsync();
+        Task<ResponseResult> GetUserByIdAsync(int id);
+        Task<ResponseResult> DeleteUserAsync(int id);
     }
 }

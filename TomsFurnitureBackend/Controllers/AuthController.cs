@@ -237,5 +237,82 @@ namespace TomsFurnitureBackend.Controllers
                 return StatusCode(500, new { Message = "An error occurred during OTP resend.", Error = ex.Message });
             }
         }
+
+        // Endpoint mới: Xem tất cả người dùng (chỉ admin)
+        [HttpGet("users")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetAllUsers()
+        {
+            try
+            {
+                _logger.LogInformation("Yêu cầu lấy danh sách tất cả người dùng bởi admin: {AdminName}", User.Identity?.Name);
+                var result = await _authService.GetAllUsersAsync();
+                if (!result.IsSuccess)
+                {
+                    _logger.LogWarning("Lấy danh sách người dùng thất bại: {Message}", result.Message);
+                    return BadRequest(new { Message = result.Message });
+                }
+
+                var successResult = (SuccessResponseResult)result;
+                _logger.LogInformation("Lấy danh sách người dùng thành công.");
+                return Ok(new { Message = successResult.Message, Users = successResult.Data });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy danh sách người dùng.");
+                return StatusCode(500, new { Message = "Đã xảy ra lỗi khi lấy danh sách người dùng.", Error = ex.Message });
+            }
+        }
+
+        // Endpoint mới: Xem người dùng theo ID (chỉ admin)
+        [HttpGet("users/{id}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetUserById(int id)
+        {
+            try
+            {
+                _logger.LogInformation("Yêu cầu lấy thông tin người dùng {UserId} bởi admin: {AdminName}", id, User.Identity?.Name);
+                var result = await _authService.GetUserByIdAsync(id);
+                if (!result.IsSuccess)
+                {
+                    _logger.LogWarning("Lấy thông tin người dùng {UserId} thất bại: {Message}", id, result.Message);
+                    return BadRequest(new { Message = result.Message });
+                }
+
+                var successResult = (SuccessResponseResult)result;
+                _logger.LogInformation("Lấy thông tin người dùng {UserId} thành công.", id);
+                return Ok(new { Message = successResult.Message, User = successResult.Data });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy thông tin người dùng {UserId}.", id);
+                return StatusCode(500, new { Message = "Đã xảy ra lỗi khi lấy thông tin người dùng.", Error = ex.Message });
+            }
+        }
+
+        // Endpoint mới: Xóa người dùng (chỉ admin)
+        [HttpDelete("users/{id}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> DeleteUser(int id)
+        {
+            try
+            {
+                _logger.LogInformation("Yêu cầu xóa người dùng {UserId} bởi admin: {AdminName}", id, User.Identity?.Name);
+                var result = await _authService.DeleteUserAsync(id);
+                if (!result.IsSuccess)
+                {
+                    _logger.LogWarning("Xóa người dùng {UserId} thất bại: {Message}", id, result.Message);
+                    return BadRequest(new { Message = result.Message });
+                }
+
+                _logger.LogInformation("Xóa người dùng {UserId} thành công.", id);
+                return Ok(new { Message = result.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi xóa người dùng {UserId}.", id);
+                return StatusCode(500, new { Message = "Đã xảy ra lỗi khi xóa người dùng.", Error = ex.Message });
+            }
+        }
     }
 }

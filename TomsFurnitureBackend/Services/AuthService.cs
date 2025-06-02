@@ -1,6 +1,7 @@
 ﻿using BCrypt.Net;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using OA.Domain.Common.Models;
 using System;
@@ -513,7 +514,7 @@ namespace TomsFurnitureBackend.Services
                 return new ErrorResponseResult($"Đã xảy ra lỗi trong quá trình gửi lại OTP: {ex.Message}");
             }
         }
-
+        // [7.] Hàm GenerateOtp: Tạo mã OTP ngẫu nhiên 6 chữ số
         private string GenerateOtp()
         {
             // B1: Tạo số ngẫu nhiên 6 chữ số
@@ -524,6 +525,194 @@ namespace TomsFurnitureBackend.Services
 
             // B3: Trả về mã OTP
             return otp;
+        }
+        // [8.] Phương thức lấy tất cả người dùng
+        public async Task<ResponseResult> GetAllUsersAsync()
+        {
+            try {
+                // B1: Lấy tất cả người dùng từ cơ sở dữ liệu + Role
+                var users = await _context.Users
+                    .Include(u => u.Role)
+                    .ToListAsync();
+                // B2: Chuyển đổi danh sách người dùng sang danh sách UserVModel
+                var userVModels = users.Select(u => u.ToUserVModel()).ToList();
+
+                // B3: Trả về kết quả thành công với danh sách người dùng
+                return new SuccessResponseResult(userVModels, "Get all user methods success!");
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResponseResult($"An error occured when get all user with message: {ex.Message}");
+            }
+        }
+        // [9.] Phương thức lấy tất người dùng theo ID
+        public async Task<ResponseResult> GetUserByIdAsync(int id)
+        {
+            try
+            {
+                // B1: Tìm người dùng theo ID với Role info trong DB
+                var user = await _context.Users
+                    .Include(u => u.Role)
+                    .FirstOrDefaultAsync(u => u.Id == id);
+                if (user == null) {
+                    return new ErrorResponseResult("User not found."); // Nếu không tìm thấy người dùng, trả về lỗi
+                }
+
+                // B2: Chuyển đổi người dùng sang UserVModel
+                var userVModel = user.ToUserVModel();
+
+                // B3: Trả về kết quả thành công với thông tin người dùng
+                return new SuccessResponseResult(userVModel, "Get user success");
+            }
+            catch (Exception ex) { 
+                return new ErrorResponseResult($"An error occured when get user by id with message: {ex.Message}"); // Xử lý lỗi và trả về thông báo lỗi
+            }
+        }
+        // [10.] Phương thức xóa người dùng theo ID
+        public async Task<ResponseResult> DeleteUserAsync(int id)
+        {
+            try
+            {
+                _logger.LogInformation("Bắt đầu xóa người dùng với ID: {UserId}", id);
+
+                // B1: Tìm người dùng theo ID
+                var user = await _context.Users
+                    .Include(u => u.Role)
+                    .FirstOrDefaultAsync(u => u.Id == id);
+
+                if (user == null)
+                {
+                    _logger.LogWarning("Không tìm thấy người dùng với ID: {UserId}", id);
+                    return new ErrorResponseResult("Không tìm thấy người dùng.");
+                }
+
+                // B2: Không cho phép xóa tài khoản admin
+                if (user.Role.RoleName == "Admin")
+                {
+                    _logger.LogWarning("Không thể xóa tài khoản admin với ID: {UserId}", id);
+                    return new ErrorResponseResult("Không thể xóa tài khoản admin.");
+                }
+
+                // B3: Sử dụng transaction để đảm bảo tính toàn vẹn dữ liệu
+                await using var transaction = await _context.Database.BeginTransactionAsync();
+
+                try
+                {
+                    // B3.1: Xóa các bản ghi liên quan không quan trọng
+                    var confirmOtps = await _context.ConfirmOtps
+                        .Where(o => o.UserId == id)
+                        .ToListAsync();
+                    if (confirmOtps.Any())
+                    {
+                        _context.ConfirmOtps.RemoveRange(confirmOtps);
+                        _logger.LogInformation("Xóa {Count} bản ghi ConfirmOtps cho người dùng {UserId}.", confirmOtps.Count, id);
+                    }
+
+                    var carts = await _context.Carts
+                        .Where(c => c.UserId == id)
+                        .ToListAsync();
+                    if (carts.Any())
+                    {
+                        _context.Carts.RemoveRange(carts);
+                        _logger.LogInformation("Xóa {Count} bản ghi Carts cho người dùng {UserId}.", carts.Count, id);
+                    }
+
+                    var comments = await _context.Comments
+                        .Where(c => c.UserId == id)
+                        .ToListAsync();
+                    if (comments.Any())
+                    {
+                        _context.Comments.RemoveRange(comments);
+                        _logger.LogInformation("Xóa {Count} bản ghi Comments cho người dùng {UserId}.", comments.Count, id);
+                    }
+
+                    var feedbacks = await _context.Feedbacks
+                        .Where(f => f.UserId == id)
+                        .ToListAsync();
+                    if (feedbacks.Any())
+                    {
+                        _context.Feedbacks.RemoveRange(feedbacks);
+                        _logger.LogInformation("Xóa {Count} bản ghi Feedbacks cho người dùng {UserId}.", feedbacks.Count, id);
+                    }
+
+                    var productReviews = await _context.ProductReviews
+                        .Where(pr => pr.UserId == id)
+                        .ToListAsync();
+                    if (productReviews.Any())
+                    {
+                        _context.ProductReviews.RemoveRange(productReviews);
+                        _logger.LogInformation("Xóa {Count} bản ghi ProductReviews cho người dùng {UserId}.", productReviews.Count, id);
+                    }
+
+                    // B3.2: Vô hiệu hóa các bản ghi quan trọng thay vì xóa
+                    var orders = await _context.Orders
+                        .Where(o => o.UserId == id)
+                        .ToListAsync();
+                    foreach (var order in orders)
+                    {
+                        order.IsActive = false; // Vô hiệu hóa đơn hàng
+                        _logger.LogInformation("Vô hiệu hóa đơn hàng {OrderId} cho người dùng {UserId}.", order.Id, id);
+                    }
+
+                    var orderAddresses = await _context.OrderAddresses
+                        .Where(oa => oa.UserId == id)
+                        .ToListAsync();
+                    foreach (var address in orderAddresses)
+                    {
+                        address.IsActive = false; // Vô hiệu hóa địa chỉ
+                        _logger.LogInformation("Vô hiệu hóa địa chỉ {AddressId} cho người dùng {UserId}.", address.Id, id);
+                    }
+
+                    var shippings = await _context.Shippings
+                        .Where(s => s.UserId == id)
+                        .ToListAsync();
+                    foreach (var shipping in shippings)
+                    {
+                        shipping.IsActive = false; // Vô hiệu hóa thông tin vận chuyển
+                        _logger.LogInformation("Vô hiệu hóa thông tin vận chuyển {ShippingId} cho người dùng {UserId}.", shipping.Id, id);
+                    }
+
+                    // B3.3: Kiểm tra các bản ghi không được xóa (Banners, News)
+                    var banners = await _context.Banners
+                        .Where(b => b.UserId == id)
+                        .ToListAsync();
+                    if (banners.Any())
+                    {
+                        _logger.LogWarning("Người dùng {UserId} có {Count} banner. Không thể xóa.", id, banners.Count);
+                        await transaction.RollbackAsync();
+                        return new ErrorResponseResult("Không thể xóa người dùng vì có banner liên quan.");
+                    }
+
+                    var news = await _context.News
+                        .Where(n => n.UserId == id)
+                        .ToListAsync();
+                    if (news.Any())
+                    {
+                        _logger.LogWarning("Người dùng {UserId} có {Count} tin tức. Không thể xóa.", id, news.Count);
+                        await transaction.RollbackAsync();
+                        return new ErrorResponseResult("Không thể xóa người dùng vì có tin tức liên quan.");
+                    }
+
+                    // B3.4: Xóa người dùng
+                    _context.Users.Remove(user);
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    _logger.LogInformation("Xóa người dùng {UserId} thành công.", id);
+                    return new SuccessResponseResult(null, "Xóa người dùng thành công.");
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError("Lỗi khi xóa các bản ghi liên quan cho người dùng {UserId}: {Error}", id, ex.Message);
+                    return new ErrorResponseResult($"Lỗi khi xóa các bản ghi liên quan: {ex.Message}");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Lỗi khi xóa người dùng {UserId}: {Error}", id, ex.Message);
+                return new ErrorResponseResult($"Đã xảy ra lỗi khi xóa người dùng: {ex.Message}");
+            }
         }
     }
 }
