@@ -19,11 +19,11 @@ public partial class Cart
 
     public string? UpdatedBy { get; set; }
 
-    public int? ProVarId { get; set; }
-
     public int? UserId { get; set; }
 
-    public virtual ProductVariant? ProVar { get; set; }
+    public int? ProId { get; set; }
+
+    public virtual Product? Pro { get; set; }
 
     public virtual User? User { get; set; }
 }

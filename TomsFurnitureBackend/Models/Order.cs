@@ -41,6 +41,12 @@ public partial class Order
 
     public int? PromotionId { get; set; }
 
+    public DateTime? DeliveryDate { get; set; }
+
+    public bool IsUserGuest { get; set; }
+
+    public int? UserGuestId { get; set; }
+
     public virtual OrderAddress? OrderAdd { get; set; }
 
     public virtual ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
@@ -52,4 +58,6 @@ public partial class Order
     public virtual Promotion? Promotion { get; set; }
 
     public virtual User? User { get; set; }
+
+    public virtual UserGuest? UserGuest { get; set; }
 }
