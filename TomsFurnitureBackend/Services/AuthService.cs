@@ -302,7 +302,7 @@ namespace TomsFurnitureBackend.Services
                 _context.Users.Add(user);
                 await _context.SaveChangesAsync();
                 _logger.LogInformation("Người dùng được tạo thành công: {Email}, UserId: {UserId}", normalizedEmail, user.Id);
-                
+
                 // B7: Tạo và lưu OTP cho người dùng
                 var otp = GenerateOtp();
                 var otpEntity = AuthExtensions.ToConfirmOtpEntity(user.Id, otp);
@@ -353,7 +353,7 @@ namespace TomsFurnitureBackend.Services
                     _logger.LogWarning("Xác nhận OTP thất bại cho {Email}: {Error}", model.Email, validationResult);
                     return new ErrorResponseResult(validationResult);
                 }
-                
+
                 // B3: Chuẩn hóa email
                 var normalizedEmail = model.Email.Trim().ToLower();
                 _logger.LogInformation("Chuẩn hóa email: {OriginalEmail} -> {NormalizedEmail}", model.Email, normalizedEmail);
@@ -529,7 +529,8 @@ namespace TomsFurnitureBackend.Services
         // [8.] Phương thức lấy tất cả người dùng
         public async Task<ResponseResult> GetAllUsersAsync()
         {
-            try {
+            try
+            {
                 // B1: Lấy tất cả người dùng từ cơ sở dữ liệu + Role
                 var users = await _context.Users
                     .Include(u => u.Role)
@@ -554,7 +555,8 @@ namespace TomsFurnitureBackend.Services
                 var user = await _context.Users
                     .Include(u => u.Role)
                     .FirstOrDefaultAsync(u => u.Id == id);
-                if (user == null) {
+                if (user == null)
+                {
                     return new ErrorResponseResult("User not found."); // Nếu không tìm thấy người dùng, trả về lỗi
                 }
 
@@ -564,7 +566,8 @@ namespace TomsFurnitureBackend.Services
                 // B3: Trả về kết quả thành công với thông tin người dùng
                 return new SuccessResponseResult(userVModel, "Get user success");
             }
-            catch (Exception ex) { 
+            catch (Exception ex)
+            {
                 return new ErrorResponseResult($"An error occured when get user by id with message: {ex.Message}"); // Xử lý lỗi và trả về thông báo lỗi
             }
         }

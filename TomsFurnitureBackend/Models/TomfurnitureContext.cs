@@ -75,6 +75,8 @@ public partial class TomfurnitureContext : DbContext
 
     public virtual DbSet<User> Users { get; set; }
 
+    public virtual DbSet<UserGuest> UserGuests { get; set; }
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
         => optionsBuilder.UseSqlServer("Data Source=ASUS;Initial Catalog=TOMFURNITURE;Integrated Security=True;Encrypt=True;Trust Server Certificate=True");
@@ -129,18 +131,18 @@ public partial class TomfurnitureContext : DbContext
 
             entity.ToTable("Cart");
 
-            entity.HasIndex(e => new { e.ProVarId, e.UserId }, "UQ__Cart__54877F1950AD91CD").IsUnique();
+            entity.HasIndex(e => new { e.ProId, e.UserId }, "UQ__Cart__B37A193B716286C5").IsUnique();
 
             entity.Property(e => e.CreatedBy).HasMaxLength(255);
             entity.Property(e => e.CreatedDate).HasColumnType("datetime");
-            entity.Property(e => e.ProVarId).HasColumnName("ProVarID");
+            entity.Property(e => e.ProId).HasColumnName("ProID");
             entity.Property(e => e.UpdatedBy).HasMaxLength(255);
             entity.Property(e => e.UpdatedDate).HasColumnType("datetime");
             entity.Property(e => e.UserId).HasColumnName("UserID");
 
-            entity.HasOne(d => d.ProVar).WithMany(p => p.Carts)
-                .HasForeignKey(d => d.ProVarId)
-                .HasConstraintName("FK__Cart__ProVarID__1EA48E88");
+            entity.HasOne(d => d.Pro).WithMany(p => p.Carts)
+                .HasForeignKey(d => d.ProId)
+                .HasConstraintName("FK__Cart__ProID__51300E55");
 
             entity.HasOne(d => d.User).WithMany(p => p.Carts)
                 .HasForeignKey(d => d.UserId)
@@ -307,6 +309,7 @@ public partial class TomfurnitureContext : DbContext
 
             entity.Property(e => e.CreatedBy).HasMaxLength(255);
             entity.Property(e => e.CreatedDate).HasColumnType("datetime");
+            entity.Property(e => e.DeliveryDate).HasColumnType("datetime");
             entity.Property(e => e.OrderAddId).HasColumnName("OrderAddID");
             entity.Property(e => e.OrderDate)
                 .HasDefaultValueSql("(getdate())")
@@ -320,6 +323,7 @@ public partial class TomfurnitureContext : DbContext
             entity.Property(e => e.Total).HasColumnType("decimal(15, 2)");
             entity.Property(e => e.UpdatedBy).HasMaxLength(255);
             entity.Property(e => e.UpdatedDate).HasColumnType("datetime");
+            entity.Property(e => e.UserGuestId).HasColumnName("UserGuestID");
             entity.Property(e => e.UserId).HasColumnName("UserID");
 
             entity.HasOne(d => d.OrderAdd).WithMany(p => p.Orders)
@@ -337,6 +341,10 @@ public partial class TomfurnitureContext : DbContext
             entity.HasOne(d => d.Promotion).WithMany(p => p.Orders)
                 .HasForeignKey(d => d.PromotionId)
                 .HasConstraintName("FK__Orders__Promotio__17036CC0");
+
+            entity.HasOne(d => d.UserGuest).WithMany(p => p.Orders)
+                .HasForeignKey(d => d.UserGuestId)
+                .HasConstraintName("FK_Orders_UserGuest");
 
             entity.HasOne(d => d.User).WithMany(p => p.Orders)
                 .HasForeignKey(d => d.UserId)
@@ -723,6 +731,22 @@ public partial class TomfurnitureContext : DbContext
                 .HasForeignKey(d => d.RoleId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__Users__RoleID__3B75D760");
+        });
+
+        modelBuilder.Entity<UserGuest>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__UserGues__3214EC071FCDC0C3");
+
+            entity.ToTable("UserGuest");
+
+            entity.Property(e => e.City).HasMaxLength(100);
+            entity.Property(e => e.CreatedDate).HasColumnType("datetime");
+            entity.Property(e => e.DetailAddress).HasMaxLength(255);
+            entity.Property(e => e.District).HasMaxLength(100);
+            entity.Property(e => e.Email).HasMaxLength(100);
+            entity.Property(e => e.FullName).HasMaxLength(100);
+            entity.Property(e => e.PhoneNumber).HasMaxLength(20);
+            entity.Property(e => e.Ward).HasMaxLength(100);
         });
 
         OnModelCreatingPartial(modelBuilder);
