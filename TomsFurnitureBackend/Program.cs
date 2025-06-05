@@ -15,7 +15,8 @@ var builder = WebApplication.CreateBuilder(args);
 // 1. CORS để phân quyền truy cập api:
 builder.Services.AddCors(options => {
     options.AddPolicy("AllowAll", policy =>
-        policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+        policy.WithOrigins("http://localhost:5173", "https://tomsfurniture.vercel.app")
+        .AllowAnyMethod().AllowAnyHeader().AllowCredentials());
 });
 
 // 2. Database
@@ -65,8 +66,8 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.LogoutPath = "/api/auth/logout";
         options.AccessDeniedPath = "/api/auth/accessdenied";
         options.Cookie.HttpOnly = true;
-        options.Cookie.SameSite = SameSiteMode.Strict;
-        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.Cookie.SameSite = SameSiteMode.None;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
         options.ExpireTimeSpan = TimeSpan.FromDays(7);
         options.SlidingExpiration = true;
     });
@@ -85,6 +86,7 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseCors("AllowAll");
 
 app.MapControllers();
 
