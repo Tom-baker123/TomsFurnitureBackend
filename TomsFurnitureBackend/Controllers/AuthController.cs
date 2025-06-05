@@ -7,6 +7,7 @@ using TomsFurnitureBackend.VModels;
 
 namespace TomsFurnitureBackend.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class AuthController : ControllerBase
