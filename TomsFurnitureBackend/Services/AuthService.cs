@@ -467,10 +467,10 @@ namespace TomsFurnitureBackend.Services
                     .OrderByDescending(o => o.CreatedDate)
                     .FirstOrDefaultAsync();
                 // B7: Nếu OTP gần nhất được gửi trong vòng 2 phút, yêu cầu đợi
-                if (latestOtp != null && latestOtp.CreatedDate.HasValue && latestOtp.CreatedDate.Value.AddMinutes(2) > DateTime.UtcNow)
+                if (latestOtp != null && latestOtp.CreatedDate.HasValue && latestOtp.CreatedDate.Value.AddMinutes(1) > DateTime.UtcNow)
                 {
                     _logger.LogWarning("Yêu cầu gửi lại OTP quá sớm cho {Email}. Vui lòng đợi thêm.", normalizedEmail);
-                    return new ErrorResponseResult("Bạn đã gửi mã OTP thành công, vui lòng đợi sau 2 phút để lấy lại OTP.");
+                    return new ErrorResponseResult("Bạn đã gửi mã OTP thành công, vui lòng đợi sau 1 phút để lấy lại OTP.");
                 }
 
                 // B8: Vô hiệu hóa các OTP cũ (chưa kích hoạt)

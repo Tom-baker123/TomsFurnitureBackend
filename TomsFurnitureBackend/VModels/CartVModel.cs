@@ -7,7 +7,6 @@ namespace TomsFurnitureBackend.VModels
         public class CartCreateVModel
         {
             [Required(ErrorMessage = "Số lượng là bắt buộc.")]
-            [Range(1, int.MaxValue, ErrorMessage = "Số lượng phải lớn hơn 0.")]
             public int Quantity { get; set; }
 
             [Required(ErrorMessage = "ID sản phẩm là bắt buộc.")]
