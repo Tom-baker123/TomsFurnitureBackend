@@ -86,7 +86,7 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseCors("AllowAll");
+app.UseCors("AllowAll"); // Đây là nơi áp dung chính sách CORS đã định nghĩa ở trên
 
 app.MapControllers();
 
