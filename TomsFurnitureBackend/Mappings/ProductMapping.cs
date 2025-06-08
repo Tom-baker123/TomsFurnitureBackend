@@ -33,7 +33,6 @@ namespace TomsFurnitureBackend.Extensions
                 OriginalPrice = model.OriginalPrice,
                 DiscountedPrice = model.DiscountedPrice,
                 StockQty = model.StockQty,
-                ImageUrl = model.ImageUrl,
                 ColorId = model.ColorId,
                 SizeId = model.SizeId,
                 MaterialId = model.MaterialId,
@@ -84,12 +83,28 @@ namespace TomsFurnitureBackend.Extensions
                     OriginalPrice = pv.OriginalPrice,
                     DiscountedPrice = pv.DiscountedPrice,
                     StockQty = pv.StockQty,
-                    ImageUrl = pv.ImageUrl,
                     ColorName = pv.Color?.ColorName ?? string.Empty,
                     SizeName = pv.Size?.SizeName ?? string.Empty,
                     MaterialName = pv.Material?.MaterialName ?? string.Empty,
                     UnitName = pv.Unit?.UnitName ?? string.Empty
-                }).ToList() ?? new List<ProductVModel.ProductVariantGetVModel>()
+                }).ToList() ?? new List<ProductVModel.ProductVariantGetVModel>(),
+                Sliders = entity.Sliders?.Where(s => s.IsActive == true).Select(s => new SliderGetVModel {
+                    Id = s.Id,
+                    Title = s.Title,
+                    Description = s.Description,
+                    ImageUrl = s.ImageUrl,
+                    LinkUrl = s.LinkUrl,
+                    StartDate = s.StartDate,
+                    EndDate = s.EndDate,
+                    IsPoster = s.IsPoster,
+                    Position = s.Position,
+                    DisplayOrder = s.DisplayOrder,
+                    IsActive = s.IsActive,
+                    CreatedDate = s.CreatedDate,
+                    UpdatedDate = s.UpdatedDate,
+                    CreatedBy = s.CreatedBy,
+                    UpdatedBy = s.UpdatedBy
+                }).ToList() ?? new List<SliderGetVModel>()
             };
         }
     }

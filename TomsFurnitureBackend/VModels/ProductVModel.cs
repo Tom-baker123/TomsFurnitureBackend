@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using System.Collections.Generic;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
 namespace TomsFurnitureBackend.VModels
@@ -48,6 +49,7 @@ namespace TomsFurnitureBackend.VModels
             public string? CountryName { get; set; }
             public string? SupplierName { get; set; }
             public List<ProductVariantGetVModel> ProductVariants { get; set; } = new List<ProductVariantGetVModel>();
+            public List<SliderGetVModel> Sliders { get; set; } = new List<SliderGetVModel>();
         }
 
         public class ProductVariantCreateVModel
@@ -60,9 +62,6 @@ namespace TomsFurnitureBackend.VModels
 
 
             public int StockQty { get; set; }
-
-
-            public string? ImageUrl { get; set; }
 
 
             public int ColorId { get; set; }
@@ -92,9 +91,6 @@ namespace TomsFurnitureBackend.VModels
 
 
             public int StockQty { get; set; }
-
-
-            public string? ImageUrl { get; set; }
 
 
             public string? ColorName { get; set; }

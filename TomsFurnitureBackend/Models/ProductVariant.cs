@@ -13,8 +13,6 @@ public partial class ProductVariant
 
     public int StockQty { get; set; }
 
-    public string? ImageUrl { get; set; }
-
     public int ProductId { get; set; }
 
     public int ColorId { get; set; }
