@@ -15,6 +15,8 @@ public partial class TomfurnitureContext : DbContext
     {
     }
 
+    public virtual DbSet<BackupProductVariantImageUrl> BackupProductVariantImageUrls { get; set; }
+
     public virtual DbSet<Banner> Banners { get; set; }
 
     public virtual DbSet<Brand> Brands { get; set; }
@@ -83,6 +85,18 @@ public partial class TomfurnitureContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<BackupProductVariantImageUrl>(entity =>
+        {
+            entity
+                .HasNoKey()
+                .ToTable("Backup_ProductVariantImageURL");
+
+            entity.Property(e => e.Id).ValueGeneratedOnAdd();
+            entity.Property(e => e.ImageUrl)
+                .HasMaxLength(255)
+                .HasColumnName("ImageURL");
+        });
+
         modelBuilder.Entity<Banner>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PK__Banners__3214EC0784B382EB");
@@ -485,9 +499,6 @@ public partial class TomfurnitureContext : DbContext
             entity.Property(e => e.CreatedBy).HasMaxLength(255);
             entity.Property(e => e.CreatedDate).HasColumnType("datetime");
             entity.Property(e => e.DiscountedPrice).HasColumnType("decimal(18, 2)");
-            entity.Property(e => e.ImageUrl)
-                .HasMaxLength(255)
-                .HasColumnName("ImageURL");
             entity.Property(e => e.MaterialId).HasColumnName("MaterialID");
             entity.Property(e => e.OriginalPrice).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.ProductId).HasColumnName("ProductID");

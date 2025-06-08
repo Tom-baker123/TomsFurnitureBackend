@@ -150,13 +150,16 @@ namespace TomsFurnitureBackend.Services
         // Xóa sản phẩm theo ID
         public async Task<ResponseResult> DeleteAsync(int id)
         {
+            using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
                 // Tìm sản phẩm theo ID, bao gồm các ProductVariants
                 var product = await _context.Products
                     .Include(p => p.ProductVariants)
+                    .Include(p => p.Carts)
+                    .Include(p => p.ProductReviews)
+                    .Include(p => p.Sliders)
                     .FirstOrDefaultAsync(p => p.Id == id);
-
                 if (product == null)
                 {
                     return new ErrorResponseResult($"Không tìm thấy sản phẩm với ID: {id}");
@@ -172,19 +175,46 @@ namespace TomsFurnitureBackend.Services
                     return new ErrorResponseResult("Không thể xóa sản phẩm vì nó đã được sử dụng trong các đơn hàng.");
                 }
 
+                // Kiểm tra các ràng buộc
+                if (product.Carts.Any())
+                {
+                    return new ErrorResponseResult($"Cannot delete the product because it is referenced in the cart table.");
+                }
+
+                if (product.ProductReviews.Any())
+                {
+                    return new ErrorResponseResult($"Cannot delete the product because it is referenced in the ProductReviews table.");
+                }
+
+                if (product.Sliders.Any())
+                {
+                    return new ErrorResponseResult($"Cannot delete the product because it is referenced in the Sliders table.");
+                }
+
+                // Xóa các ProductVariant thủ công
+                if (product.ProductVariants.Any())
+                {
+                    _context.ProductVariants.RemoveRange(product.ProductVariants);
+                }
+
                 // Xóa sản phẩm
                 _context.Products.Remove(product);
                 await _context.SaveChangesAsync();
+
+                // Commit transaction
+                await transaction.CommitAsync();
 
                 return new SuccessResponseResult(null, "Xóa sản phẩm thành công");
             }
             catch (DbUpdateException dbEx)
             {
+                await transaction.RollbackAsync();
                 var errorMessage = dbEx.InnerException?.Message ?? dbEx.Message;
                 return new ErrorResponseResult($"Lỗi khi xóa sản phẩm: {errorMessage}");
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 return new ErrorResponseResult($"Lỗi khi xóa sản phẩm: {ex.Message}");
             }
         }
@@ -205,6 +235,7 @@ namespace TomsFurnitureBackend.Services
                     .ThenInclude(pv => pv.Material)
                 .Include(p => p.ProductVariants)
                     .ThenInclude(pv => pv.Unit)
+                .Include(p => p.Sliders.Where(s => s.IsActive == true))
                 .OrderBy(p => p.Id)
                 .ToListAsync();
 
@@ -227,6 +258,7 @@ namespace TomsFurnitureBackend.Services
                     .ThenInclude(pv => pv.Material)
                 .Include(p => p.ProductVariants)
                     .ThenInclude(pv => pv.Unit)
+                .Include(p => p.Sliders.Where(s => s.IsActive == true))
                 .FirstOrDefaultAsync(p => p.Id == id);
 
             return product?.ToGetVModel();
