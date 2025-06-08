@@ -121,17 +121,6 @@ namespace TomsFurnitureBackend.Services
                 _context.Products.Add(product);
                 await _context.SaveChangesAsync(); // Lưu để sinh Product.Id
 
-                // Gán ProductId và đảm bảo Id của ProductVariant không được gán
-                foreach (var variant in product.ProductVariants)
-                {
-                    variant.ProductId = product.Id;
-                    variant.Id = 0; // Đặt Id về 0 để EF bỏ qua và để SQL Server tự sinh
-                }
-
-                // Lưu các ProductVariant
-                _context.ProductVariants.AddRange(product.ProductVariants);
-                await _context.SaveChangesAsync();
-
                 // Lấy dữ liệu mới nhất để trả về
                 var productVm = await GetByIdAsync(product.Id);
                 return new SuccessResponseResult(productVm, "Thêm sản phẩm và biến thể thành công");
