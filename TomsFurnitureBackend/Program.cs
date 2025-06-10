@@ -67,7 +67,8 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.AccessDeniedPath = "/api/auth/accessdenied";
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.None;
-        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        //options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
         options.ExpireTimeSpan = TimeSpan.FromDays(7);
         options.SlidingExpiration = true;
     });
@@ -80,13 +81,10 @@ var app = builder.Build();
 
 app.UseSwagger();
 app.UseSwaggerUI();
-
-
 app.UseHttpsRedirection();
-
+app.UseCors("AllowAll"); // Đây là nơi áp dung chính sách CORS đã định nghĩa ở trên
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseCors("AllowAll"); // Đây là nơi áp dung chính sách CORS đã định nghĩa ở trên
 
 app.MapControllers();
 
