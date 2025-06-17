@@ -142,7 +142,7 @@ namespace TomsFurnitureBackend.Services
                 }
 
                 // Kiểm tra xem màu sắc có đang được sử dụng trong ProductVariant không không?
-                var isUsedInProductVariant = await _context.ProductVariants.AnyAsync(pv => pv.Id == id);
+                var isUsedInProductVariant = await _context.ProductVariants.AnyAsync(pv => pv.ColorId == id);
                 if (isUsedInProductVariant) {
                     return new ErrorResponseResult("This color is being used in ProductVariant and cannot be deleted.");
                 }
