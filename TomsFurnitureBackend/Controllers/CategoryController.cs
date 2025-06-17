@@ -109,20 +109,17 @@ namespace TomsFurnitureBackend.Controllers
 
 
         [HttpPut]
-        public async Task<IActionResult> UpdateCategory(int id, [FromForm] CategoryUpdateVModel categoryVModel, IFormFile? imageFile = null) {
+        public async Task<IActionResult> UpdateCategory([FromForm] CategoryUpdateVModel categoryVModel, IFormFile? imageFile = null) {
             try
             {
-                // B1: Kiểm tra Id hợp lệ không?
-                if (id != categoryVModel.Id) {
-                    return BadRequest("Id not match in vmodel");
-                }
 
-                // B2: Tìm danh mục để lấy URL ảnh cũ
+                // B1: Tìm danh mục để lấy URL ảnh cũ
                 var category = await _context.Categories
                     .AsNoTracking()
                     .FirstOrDefaultAsync(c => c.Id == categoryVModel.Id);
-                if (category == null) {
-                    return NotFound($"Not found ID {id} in category");
+                if (category == null)
+                {
+                    return NotFound($"Not found ID {categoryVModel.Id} in category");
                 }
 
                 // B3: Xử lý upload ảnh nếu có

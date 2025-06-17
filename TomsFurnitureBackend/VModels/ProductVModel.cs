@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization; // Add this namespace
 
 namespace TomsFurnitureBackend.VModels
 {
@@ -33,7 +34,7 @@ namespace TomsFurnitureBackend.VModels
         public class ProductUpdateVModel : ProductCreateVModel
         {
             public bool? IsActive { get; set; }
-
+            [JsonPropertyOrder(-1)] // Negative value ensures Id appears first
             public int Id { get; set; }
         }
 
