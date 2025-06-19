@@ -80,6 +80,28 @@ namespace TomsFurnitureBackend.VModels
             // public bool? IsActive { get; set; }
         }
 
+        public class ProductVariantUpdateVModel
+        {
+            [JsonPropertyOrder(-1)]
+            public int Id { get; set; }
+
+            public decimal OriginalPrice { get; set; }
+
+            public decimal? DiscountedPrice { get; set; }
+
+            public int StockQty { get; set; }
+
+            public int ColorId { get; set; }
+
+            public int SizeId { get; set; }
+
+            public int MaterialId { get; set; }
+
+            public int UnitId { get; set; }
+
+            public bool? IsActive { get; set; }
+        }
+
         public class ProductVariantGetVModel
         {
             public int Id { get; set; }
@@ -94,15 +116,13 @@ namespace TomsFurnitureBackend.VModels
             public int StockQty { get; set; }
 
 
+            public int ColorId { get; set; } // Thay ColorName thành ColorId
             public string? ColorName { get; set; }
-
-
+            public int SizeId { get; set; } // Thay SizeName thành SizeId
             public string? SizeName { get; set; }
-
-
+            public int MaterialId { get; set; } // Thay MaterialName thành MaterialId
             public string? MaterialName { get; set; }
-
-
+            public int UnitId { get; set; } // Thay UnitName thành UnitId
             public string? UnitName { get; set; }
         }
     }

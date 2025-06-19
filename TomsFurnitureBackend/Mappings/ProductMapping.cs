@@ -83,10 +83,14 @@ namespace TomsFurnitureBackend.Extensions
                     OriginalPrice = pv.OriginalPrice,
                     DiscountedPrice = pv.DiscountedPrice,
                     StockQty = pv.StockQty,
-                    ColorName = pv.Color?.ColorName ?? string.Empty,
-                    SizeName = pv.Size?.SizeName ?? string.Empty,
-                    MaterialName = pv.Material?.MaterialName ?? string.Empty,
-                    UnitName = pv.Unit?.UnitName ?? string.Empty
+                    ColorId = pv.ColorId, // Thay ColorName thành ColorId
+                    ColorName = pv.Color?.ColorName,
+                    SizeId = pv.SizeId, // Thay SizeName thành SizeId
+                    SizeName = pv.Size?.SizeName,
+                    MaterialId = pv.MaterialId, // Thay MaterialName thành MaterialId
+                    MaterialName = pv.Material?.MaterialName,
+                    UnitId = pv.UnitId, // Thay UnitName thành UnitId
+                    UnitName = pv.Unit?.UnitName,
                 }).ToList() ?? new List<ProductVModel.ProductVariantGetVModel>(),
                 Sliders = entity.Sliders?.Where(s => s.IsActive == true).Select(s => new SliderGetVModel {
                     Id = s.Id,
@@ -106,6 +110,19 @@ namespace TomsFurnitureBackend.Extensions
                     UpdatedBy = s.UpdatedBy
                 }).ToList() ?? new List<SliderGetVModel>()
             };
+        }
+        // Ánh xạ biến thể
+        public static void UpdateVariantEntity(this ProductVariant entity, ProductVModel.ProductVariantUpdateVModel model)
+        {
+            entity.OriginalPrice = model.OriginalPrice;
+            entity.DiscountedPrice = model.DiscountedPrice;
+            entity.StockQty = model.StockQty;
+            entity.ColorId = model.ColorId;
+            entity.SizeId = model.SizeId;
+            entity.MaterialId = model.MaterialId;
+            entity.UnitId = model.UnitId;
+            entity.IsActive = model.IsActive ?? entity.IsActive;
+            entity.UpdatedDate = DateTime.UtcNow;
         }
     }
 }

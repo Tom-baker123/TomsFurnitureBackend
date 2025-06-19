@@ -290,5 +290,90 @@ namespace TomsFurnitureBackend.Services
                 return new ErrorResponseResult($"Lỗi khi cập nhật sản phẩm: {ex.Message}");
             }
         }
+
+        // Cập nhật biến thể sản phẩm
+        public async Task<ResponseResult> UpdateVariantAsync(ProductVModel.ProductVariantUpdateVModel model)
+        {
+            try
+            {
+                // Kiểm tra dữ liệu đầu vào
+                if (model == null)
+                {
+                    return new ErrorResponseResult("Dữ liệu biến thể sản phẩm không được cung cấp.");
+                }
+
+                if (model.Id <= 0)
+                {
+                    return new ErrorResponseResult("ID biến thể sản phẩm không hợp lệ.");
+                }
+
+                // Kiểm tra biến thể có tồn tại
+                var variant = await _context.ProductVariants
+                    .Include(pv => pv.Color)
+                    .Include(pv => pv.Size)
+                    .Include(pv => pv.Material)
+                    .Include(pv => pv.Unit)
+                    .FirstOrDefaultAsync(pv => pv.Id == model.Id);
+
+                if (variant == null)
+                {
+                    return new ErrorResponseResult($"Không tìm thấy biến thể sản phẩm với ID: {model.Id}");
+                }
+
+                // Kiểm tra validation cho các khóa ngoại
+                var variantValidationResult = await ValidateProductVariantsAsync(new List<ProductVariantCreateVModel>
+                {
+                    new ProductVariantCreateVModel
+                    {
+                        OriginalPrice = model.OriginalPrice,
+                        DiscountedPrice = model.DiscountedPrice,
+                        StockQty = model.StockQty,
+                        ColorId = model.ColorId,
+                        SizeId = model.SizeId,
+                        MaterialId = model.MaterialId,
+                        UnitId = model.UnitId
+                    }
+                });
+
+                if (variantValidationResult != null)
+                {
+                    return variantValidationResult;
+                }
+
+                // Sử dụng mapping để cập nhật biến thể
+                variant.UpdateVariantEntity(model);
+
+                await _context.SaveChangesAsync();
+
+                // Lấy dữ liệu sản phẩm mới nhất để trả về
+                var product = await _context.Products
+                    .Include(p => p.ProductVariants)
+                        .ThenInclude(pv => pv.Color)
+                    .Include(p => p.ProductVariants)
+                        .ThenInclude(pv => pv.Size)
+                    .Include(p => p.ProductVariants)
+                        .ThenInclude(pv => pv.Material)
+                    .Include(p => p.ProductVariants)
+                        .ThenInclude(pv => pv.Unit)
+                    .FirstOrDefaultAsync(p => p.Id == variant.ProductId);
+
+                if (product == null)
+                {
+                    return new ErrorResponseResult("Không tìm thấy sản phẩm chứa biến thể.");
+                }
+
+                var productVm = product.ToGetVModel();
+                return new SuccessResponseResult(productVm, "Cập nhật biến thể sản phẩm thành công");
+            }
+            catch (DbUpdateException dbEx)
+            {
+                var errorMessage = dbEx.InnerException?.Message ?? dbEx.Message;
+                return new ErrorResponseResult($"Lỗi khi cập nhật biến thể sản phẩm: {errorMessage}");
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResponseResult($"Lỗi khi cập nhật biến thể sản phẩm: {ex.Message}");
+            }
+        }
     }
 }
