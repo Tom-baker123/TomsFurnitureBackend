@@ -36,4 +36,17 @@
         public DateTime? UpdatedDate { get; set; }
         public string RoleName { get; set; } = null!;
     }
+
+    // ViewModel để yêu cầu quên mật khẩu
+    public class ForgotPasswordVModel
+    {
+        public string Email { get; set; } = null!;
+    }
+
+    // ViewModel để đặt lại mật khẩu sau khi xác thực OTP
+    public class ResetPasswordVModel
+    {
+        public string Email { get; set; } = null!;
+        public string NewPassword { get; set; } = null!;
+    }
 }

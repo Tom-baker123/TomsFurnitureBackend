@@ -18,5 +18,8 @@ namespace TomsFurnitureBackend.Services.Interfaces
         Task<ResponseResult> GetAllUsersAsync();
         Task<ResponseResult> GetUserByIdAsync(int id);
         Task<ResponseResult> DeleteUserAsync(int id);
+        // Phương thức cho quên mật khẩu
+        Task<ResponseResult> ForgotPasswordAsync(ForgotPasswordVModel model);
+        Task<ResponseResult> ResetPasswordAsync(ResetPasswordVModel model);
     }
 }
