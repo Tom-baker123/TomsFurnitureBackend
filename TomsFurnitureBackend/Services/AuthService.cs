@@ -3,9 +3,13 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using MimeKit.Cryptography;
 using OA.Domain.Common.Models;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 using System.Linq;
 using System.Security.Claims;
 using System.Text.RegularExpressions;
@@ -132,6 +136,35 @@ namespace TomsFurnitureBackend.Services
             // B4: Nếu hợp lệ, trả về chuỗi rỗng
             return string.Empty;
         }
+        // Hàm ValidateResetPassword: Xác thực dữ liệu đầu vào cho đặt lại mật khẩu
+        private static string ValidateResetPassword(ResetPasswordVModel model)
+        {
+            // Kiểm tra email
+            if (string.IsNullOrWhiteSpace(model.Email))
+            {
+                return "Email is required!";
+            }
+            const string emailRegex = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
+            if (!Regex.IsMatch(model.Email.Trim(), emailRegex))
+            {
+                return "Email format is not support!";
+            }
+            
+            // Kiểm tra mật khẩu mới
+            if (string.IsNullOrWhiteSpace(model.NewPassword))
+            {
+                return "New Password is required";
+            }
+
+            // Kiểm tra độ dài password mới
+            if (model.NewPassword.Length < 6)
+            {
+                return "The new password has at least 6 characters!";
+            }
+
+            return string.Empty;
+        }
+
         // [1.] Hàm LoginAsync: Xử lý đăng nhập người dùng
         public async Task<ResponseResult> LoginAsync(LoginVModel model, HttpContext httpContext)
         {
@@ -715,6 +748,151 @@ namespace TomsFurnitureBackend.Services
             {
                 _logger.LogError("Lỗi khi xóa người dùng {UserId}: {Error}", id, ex.Message);
                 return new ErrorResponseResult($"Đã xảy ra lỗi khi xóa người dùng: {ex.Message}");
+            }
+        }
+        // [11.] Phương thức quên mật khẩu
+        public async Task<ResponseResult> ForgotPasswordAsync(ForgotPasswordVModel model)
+        {
+            try
+            {
+                _logger.LogInformation("Email required for forgot password: {Email}", model.Email);
+
+                // B1: Xác thực email đầu vào
+                var validationResult = ValidateEmail(model.Email);
+                if (!string.IsNullOrEmpty(validationResult))
+                {
+                    _logger.LogWarning("Validation failed");
+                    return new ErrorResponseResult(validationResult);
+                }
+
+                // B2: Chuẩn hóa email
+                var normalizedEmail = model.Email.Trim().ToLower();
+
+                // B3: Tìm người dùng dựa trên email
+                var user = await _context.Users
+                    .FirstOrDefaultAsync(u => u.Email.ToLower() == normalizedEmail);
+                if (user == null)
+                {
+                    _logger.LogWarning("Can't found email to reset password!");
+                    return new ErrorResponseResult("Not found email from user");
+                }
+
+                // B4: Kiểm tra tài khoản đã kích hoạt chưa
+                if (!user.IsActive.GetValueOrDefault())
+                {
+                    _logger.LogWarning("Email is not activate!");
+                    return new ErrorResponseResult("Email {Email} is not activate!");
+                }
+
+                // B5: Chuyển trạng thái IsActive thành false
+                user.IsActive = false;
+                user.UpdatedDate = DateTime.UtcNow;
+                user.UpdatedBy = "System";
+                await _context.SaveChangesAsync();
+                _logger.LogInformation("User {Email} set to inactive for password reset.", normalizedEmail);
+
+                // B6: Kiểm tra thời gian gửi OTP gần nhất
+                var latestOtp = await _context.ConfirmOtps
+                    .Where(o => o.UserId == user.Id)
+                    .OrderByDescending(o => o.CreatedDate)
+                    .FirstOrDefaultAsync();
+                if (latestOtp != null && latestOtp.CreatedDate.HasValue && latestOtp.CreatedDate.Value.AddMinutes(1) > DateTime.UtcNow)
+                {
+                    _logger.LogWarning("Request go so sooner. Please for 1 minutes.");
+                    return new ErrorResponseResult("Please wait for 1 minutes before new OTP request.");
+                }
+
+                // B7: Vô hiệu hóa các OTP cũ
+                var oldOtps = await _context.ConfirmOtps
+                    .Where(o => o.UserId == user.Id && o.CheckActive == false)
+                    .ToListAsync();
+                foreach (var oldOtp in oldOtps)
+                {
+                    oldOtp.CheckActive = true;
+                }
+
+                // B8: Tạo OTP mới
+                var otp = GenerateOtp();
+                var otpEntity = AuthExtensions.ToConfirmOtpEntity(user.Id, otp);
+                _context.ConfirmOtps.Add(otpEntity);
+                await _context.SaveChangesAsync();
+                _logger.LogInformation("Create new OTP for {Email}: {Otp}, expired at {Expiry}", normalizedEmail, otp, otpEntity.ExpiredDate);
+
+                // B8: Gửi email OTP
+                try
+                {
+                    var emailBody = $"<p>The OTP code to reset your password is: <strong>{otp}</strong>. This code is valid for 30 minutes.</p>";
+                    await _emailService.SendEmailAsync(model.Email, "OTP code to reset password", emailBody);
+                    _logger.LogInformation("Gửi email OTP thành công tới {Email}", normalizedEmail);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError("Failed to send OTP email to {Email}: {Error}", normalizedEmail, ex.Message);
+                    _context.ConfirmOtps.Remove(otpEntity);
+                    user.IsActive = true; // Khôi phục trạng thái IsActive
+                    await _context.SaveChangesAsync();
+                    return new ErrorResponseResult("Failed to send OTP email to. Please try again.");
+                }
+
+                // B9: Trả về kết quả thành công
+                return new SuccessResponseResult(null, "OTP code sent successfully. Please check your email.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Error during forgot password request process {Email}: {Error}", model.Email, ex.Message);
+                return new ErrorResponseResult($"An error occurred while requesting forgotten password: {ex.Message}");
+            }
+        }
+        // [12.] Phương thức reset mật khẩu
+        public async Task<ResponseResult> ResetPasswordAsync(ResetPasswordVModel model)
+        {
+            try
+            {
+                _logger.LogInformation("Password reset request for email: {Email}", model.Email);
+
+                // B1: Xác thực dữ liệu đầu vào
+                var validationResult = ValidateResetPassword(model);
+                if (!string.IsNullOrEmpty(validationResult))
+                {
+                    _logger.LogWarning("Password reset validation failed for {Email}: {Error}", model.Email, validationResult);
+                    return new ErrorResponseResult(validationResult); // Giữ nguyên message nếu validationResult đã là tiếng Anh
+                }
+
+                // B2: Chuẩn hóa email
+                var normalizedEmail = model.Email.Trim().ToLower();
+                _logger.LogInformation("Normalize email: {OriginalEmail} -> {NormalizedEmail}", model.Email, normalizedEmail);
+
+                // B3: Tìm người dùng dựa trên email
+                var user = await _context.Users
+                    .FirstOrDefaultAsync(u => u.Email.ToLower() == normalizedEmail);
+                if (user == null)
+                {
+                    _logger.LogWarning("User not found for email: {Email}", normalizedEmail);
+                    return new ErrorResponseResult("User not found.");
+                }
+
+                // B_: Kiểm tra tài khoản đã kích hoạt chưa
+                //if (!user.IsActive.GetValueOrDefault())
+                //{
+                //    _logger.LogWarning("Account not activated: {Email}", normalizedEmail);
+                //    return new ErrorResponseResult("Your account is not activated yet.");
+                //}
+
+                // B4: Cập nhật mật khẩu mới
+                user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.NewPassword);
+                user.IsActive = true; // Kích hoạt lại tài khoản
+                user.UpdatedDate = DateTime.UtcNow;
+                user.UpdatedBy = "System";
+                await _context.SaveChangesAsync();
+                _logger.LogInformation("Password reset successfully for {Email}", normalizedEmail);
+
+                // B5: Trả về kết quả thành công
+                return new SuccessResponseResult(null, "Password has been reset successfully.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Error during password reset for {Email}: {Error}", model.Email, ex.Message);
+                return new ErrorResponseResult($"An error occurred during the password reset process: {ex.Message}");
             }
         }
     }

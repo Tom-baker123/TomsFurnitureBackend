@@ -315,5 +315,71 @@ namespace TomsFurnitureBackend.Controllers
                 return StatusCode(500, new { Message = "Đã xảy ra lỗi khi xóa người dùng.", Error = ex.Message });
             }
         }
+
+        /// <summary>
+        /// Requests a password reset OTP for the specified email.
+        /// </summary>
+        [HttpPost("forgot-password")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordVModel model)
+        {
+            try
+            {
+                if (model == null || string.IsNullOrWhiteSpace(model.Email))
+                {
+                    _logger.LogWarning("Forgot password attempt with invalid email.");
+                    return BadRequest(new { Message = "Email is required." });
+                }
+
+                _logger.LogInformation("Forgot password attempt for email: {Email}", model.Email);
+                var result = await _authService.ForgotPasswordAsync(model);
+                if (!result.IsSuccess)
+                {
+                    _logger.LogWarning("Forgot password failed for {Email}: {Message}", model.Email, result.Message);
+                    return BadRequest(new { Message = result.Message });
+                }
+
+                _logger.LogInformation("Forgot password successful for {Email}", model.Email);
+                return Ok(new { Message = result.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during forgot password for {Email}.", model?.Email ?? "unknown");
+                return StatusCode(500, new { Message = "An error occurred during forgot password.", Error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Resets the user's password using the provided OTP and new password.
+        /// </summary>
+        [HttpPost("reset-password")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordVModel model)
+        {
+            try
+            {
+                if (model == null)
+                {
+                    _logger.LogWarning("Reset password attempt with null model.");
+                    return BadRequest(new { Message = "Dữ liệu đặt lại mật khẩu không hợp lệ." });
+                }
+
+                _logger.LogInformation("Reset password attempt for email: {Email}", model.Email);
+                var result = await _authService.ResetPasswordAsync(model);
+                if (!result.IsSuccess)
+                {
+                    _logger.LogWarning("Reset password failed for {Email}: {Message}", model.Email, result.Message);
+                    return BadRequest(new { Message = result.Message });
+                }
+
+                _logger.LogInformation("Reset password successful for {Email}", model.Email);
+                return Ok(new { Message = result.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during reset password for {Email}.", model?.Email ?? "unknown");
+                return StatusCode(500, new { Message = "An error occurred during reset password.", Error = ex.Message });
+            }
+        }
     }
 }
