@@ -166,5 +166,81 @@ namespace TomsFurnitureBackend.Extensions
                 RoleName = entity.Role?.RoleName ?? "Unknown"
             };
         }
+        // Ánh xạ AddUserVModel sang User entity
+        public static User ToUserEntity(this AddUserVModel model)
+        {
+            if (model == null)
+            {
+                throw new ArgumentNullException(nameof(model), "AddUserVModel cannot be null.");
+            }
+
+            bool gender;
+            if (string.IsNullOrWhiteSpace(model.Gender))
+            {
+                gender = false; // Mặc định là false nếu không có Gender
+            }
+            else
+            {
+                var normalizedGender = model.Gender.Trim().ToLower();
+                if (normalizedGender != "male" && normalizedGender != "female")
+                {
+                    throw new ArgumentException("Gender must be 'male' or 'female'.", nameof(model.Gender));
+                }
+                gender = normalizedGender == "male";
+            }
+
+            return new User
+            {
+                UserName = model.UserName,
+                Email = model.Email,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.Password),
+                Gender = gender,
+                PhoneNumber = model.PhoneNumber,
+                UserAddress = model.UserAddress,
+                IsActive = model.IsActive,
+                CreatedDate = DateTime.UtcNow,
+                CreatedBy = "Admin",
+                RoleId = model.RoleId
+            };
+        }
+
+        // Cập nhật User entity từ UpdateUserVModel
+        public static void UpdateUserEntity(this User entity, UpdateUserVModel model)
+        {
+            if (entity == null)
+            {
+                throw new ArgumentNullException(nameof(entity), "User entity cannot be null.");
+            }
+
+            if (model == null)
+            {
+                throw new ArgumentNullException(nameof(model), "UpdateUserVModel cannot be null.");
+            }
+
+            bool gender;
+            if (string.IsNullOrWhiteSpace(model.Gender))
+            {
+                gender = entity.Gender; // Giữ nguyên nếu không cung cấp
+            }
+            else
+            {
+                var normalizedGender = model.Gender.Trim().ToLower();
+                if (normalizedGender != "male" && normalizedGender != "female")
+                {
+                    throw new ArgumentException("Gender must be 'male' or 'female'.", nameof(model.Gender));
+                }
+                gender = normalizedGender == "male";
+            }
+
+            entity.UserName = model.UserName;
+            entity.Email = model.Email;
+            entity.Gender = gender;
+            entity.PhoneNumber = model.PhoneNumber;
+            entity.UserAddress = model.UserAddress;
+            entity.IsActive = model.IsActive ?? entity.IsActive;
+            entity.RoleId = model.RoleId;
+            entity.UpdatedDate = DateTime.UtcNow;
+            entity.UpdatedBy = "Admin";
+        }
     }
 }
