@@ -17,6 +17,8 @@ namespace TomsFurnitureBackend.Services.Interfaces
         // Phương thức xử lý người dùng
         Task<ResponseResult> GetAllUsersAsync();
         Task<ResponseResult> GetUserByIdAsync(int id);
+        Task<ResponseResult> AddUserAsync(AddUserVModel model);
+        Task<ResponseResult> UpdateUserAsync(int id, UpdateUserVModel model);
         Task<ResponseResult> DeleteUserAsync(int id);
         // Phương thức cho quên mật khẩu
         Task<ResponseResult> ForgotPasswordAsync(ForgotPasswordVModel model);

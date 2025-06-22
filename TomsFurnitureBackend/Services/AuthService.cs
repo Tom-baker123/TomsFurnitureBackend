@@ -164,6 +164,71 @@ namespace TomsFurnitureBackend.Services
 
             return string.Empty;
         }
+        // Hàm xác thực dữ liệu đầu vào cho thêm người dùng
+        private static string ValidateAddUser(AddUserVModel model)
+        {
+            if (string.IsNullOrWhiteSpace(model.UserName))
+            {
+                return "Tên người dùng là bắt buộc.";
+            }
+            if (string.IsNullOrWhiteSpace(model.Email))
+            {
+                return "Email là bắt buộc.";
+            }
+            const string emailRegex = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
+            if (!Regex.IsMatch(model.Email.Trim(), emailRegex))
+            {
+                return "Định dạng email không hợp lệ.";
+            }
+            if (string.IsNullOrWhiteSpace(model.Password))
+            {
+                return "Mật khẩu là bắt buộc.";
+            }
+            if (model.Password.Length < 6)
+            {
+                return "Mật khẩu phải có ít nhất 6 ký tự.";
+            }
+            if (!string.IsNullOrWhiteSpace(model.Gender) &&
+                model.Gender.Trim().ToLower() != "male" &&
+                model.Gender.Trim().ToLower() != "female")
+            {
+                return "Giới tính phải là 'Male' hoặc 'Female'.";
+            }
+            if (model.RoleId <= 0)
+            {
+                return "Vai trò là bắt buộc.";
+            }
+            return string.Empty;
+        }
+
+        // Hàm xác thực dữ liệu đầu vào cho cập nhật người dùng
+        private static string ValidateUpdateUser(UpdateUserVModel model)
+        {
+            if (string.IsNullOrWhiteSpace(model.UserName))
+            {
+                return "Tên người dùng là bắt buộc.";
+            }
+            if (string.IsNullOrWhiteSpace(model.Email))
+            {
+                return "Email là bắt buộc.";
+            }
+            const string emailRegex = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
+            if (!Regex.IsMatch(model.Email.Trim(), emailRegex))
+            {
+                return "Định dạng email không hợp lệ.";
+            }
+            if (!string.IsNullOrWhiteSpace(model.Gender) &&
+                model.Gender.Trim().ToLower() != "male" &&
+                model.Gender.Trim().ToLower() != "female")
+            {
+                return "Giới tính phải là 'Male' hoặc 'Female'.";
+            }
+            if (model.RoleId <= 0)
+            {
+                return "Vai trò là bắt buộc.";
+            }
+            return string.Empty;
+        }
 
         // [1.] Hàm LoginAsync: Xử lý đăng nhập người dùng
         public async Task<ResponseResult> LoginAsync(LoginVModel model, HttpContext httpContext)
@@ -893,6 +958,113 @@ namespace TomsFurnitureBackend.Services
             {
                 _logger.LogError("Error during password reset for {Email}: {Error}", model.Email, ex.Message);
                 return new ErrorResponseResult($"An error occurred during the password reset process: {ex.Message}");
+            }
+        }
+        // [13.] Phương thức thêm người dùng mới
+        public async Task<ResponseResult> AddUserAsync(AddUserVModel model)
+        {
+            try
+            {
+                _logger.LogInformation("Bắt đầu thêm người dùng mới với email: {Email}", model.Email);
+
+                // B1: Xác thực dữ liệu đầu vào
+                var validationResult = ValidateAddUser(model);
+                if (!string.IsNullOrEmpty(validationResult))
+                {
+                    _logger.LogWarning("Thêm người dùng thất bại cho {Email}: {Error}", model.Email, validationResult);
+                    return new ErrorResponseResult(validationResult);
+                }
+
+                // B2: Chuẩn hóa email
+                var normalizedEmail = model.Email.Trim().ToLower();
+                _logger.LogInformation("Chuẩn hóa email: {OriginalEmail} -> {NormalizedEmail}", model.Email, normalizedEmail);
+
+                // B3: Kiểm tra email đã tồn tại
+                if (await _context.Users.AnyAsync(u => u.Email.ToLower() == normalizedEmail))
+                {
+                    _logger.LogWarning("Email đã được đăng ký: {Email}", normalizedEmail);
+                    return new ErrorResponseResult("Email đã được đăng ký.");
+                }
+
+                // B4: Kiểm tra vai trò tồn tại
+                var role = await _context.Roles.FirstOrDefaultAsync(r => r.Id == model.RoleId);
+                if (role == null)
+                {
+                    _logger.LogWarning("Không tìm thấy vai trò với ID: {RoleId}", model.RoleId);
+                    return new ErrorResponseResult("Vai trò không tồn tại.");
+                }
+
+                // B5: Tạo user entity và lưu vào database
+                var user = model.ToUserEntity();
+                _context.Users.Add(user);
+                await _context.SaveChangesAsync();
+                _logger.LogInformation("Thêm người dùng thành công: {Email}, UserId: {UserId}", normalizedEmail, user.Id);
+
+                // B6: Trả về kết quả thành công
+                return new SuccessResponseResult(user.ToUserVModel(), "Thêm người dùng thành công.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Lỗi khi thêm người dùng {Email}: {Error}", model.Email, ex.Message);
+                return new ErrorResponseResult($"Đã xảy ra lỗi khi thêm người dùng: {ex.Message}");
+            }
+        }
+        // [14.] Phương thức cập nhật người dùng
+        public async Task<ResponseResult> UpdateUserAsync(int id, UpdateUserVModel model)
+        {
+            try
+            {
+                _logger.LogInformation("Bắt đầu cập nhật người dùng với ID: {UserId}", id);
+
+                // B1: Xác thực dữ liệu đầu vào
+                var validationResult = ValidateUpdateUser(model);
+                if (!string.IsNullOrEmpty(validationResult))
+                {
+                    _logger.LogWarning("Cập nhật người dùng thất bại cho ID {UserId}: {Error}", id, validationResult);
+                    return new ErrorResponseResult(validationResult);
+                }
+
+                // B2: Tìm người dùng theo ID
+                var user = await _context.Users
+                    .Include(u => u.Role)
+                    .FirstOrDefaultAsync(u => u.Id == id);
+                if (user == null)
+                {
+                    _logger.LogWarning("Không tìm thấy người dùng với ID: {UserId}", id);
+                    return new ErrorResponseResult("Không tìm thấy người dùng.");
+                }
+
+                // B3: Chuẩn hóa email
+                var normalizedEmail = model.Email.Trim().ToLower();
+                _logger.LogInformation("Chuẩn hóa email: {OriginalEmail} -> {NormalizedEmail}", model.Email, normalizedEmail);
+
+                // B4: Kiểm tra email đã tồn tại (trừ chính user đang cập nhật)
+                if (await _context.Users.AnyAsync(u => u.Email.ToLower() == normalizedEmail && u.Id != id))
+                {
+                    _logger.LogWarning("Email đã được sử dụng bởi người dùng khác: {Email}", normalizedEmail);
+                    return new ErrorResponseResult("Email đã được sử dụng bởi người dùng khác.");
+                }
+
+                // B5: Kiểm tra vai trò tồn tại
+                var role = await _context.Roles.FirstOrDefaultAsync(r => r.Id == model.RoleId);
+                if (role == null)
+                {
+                    _logger.LogWarning("Không tìm thấy vai trò với ID: {RoleId}", model.RoleId);
+                    return new ErrorResponseResult("Vai trò không tồn tại.");
+                }
+
+                // B6: Cập nhật user entity
+                user.UpdateUserEntity(model);
+                await _context.SaveChangesAsync();
+                _logger.LogInformation("Cập nhật người dùng thành công: {UserId}", id);
+
+                // B7: Trả về kết quả thành công
+                return new SuccessResponseResult(user.ToUserVModel(), "Cập nhật người dùng thành công.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Lỗi khi cập nhật người dùng {UserId}: {Error}", id, ex.Message);
+                return new ErrorResponseResult($"Đã xảy ra lỗi khi cập nhật người dùng: {ex.Message}");
             }
         }
     }

@@ -381,5 +381,73 @@ namespace TomsFurnitureBackend.Controllers
                 return StatusCode(500, new { Message = "An error occurred during reset password.", Error = ex.Message });
             }
         }
+
+        /// <summary>
+        /// Adds a new user (admin only).
+        /// </summary>
+        [HttpPost("users/add")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> AddUser([FromBody] AddUserVModel model)
+        {
+            try
+            {
+                if (model == null)
+                {
+                    _logger.LogWarning("Add user attempt with null model.");
+                    return BadRequest(new { Message = "Dữ liệu người dùng không hợp lệ." });
+                }
+
+                _logger.LogInformation("Add user attempt for email: {Email} by admin: {AdminName}", model.Email, User.Identity?.Name);
+                var result = await _authService.AddUserAsync(model);
+                if (!result.IsSuccess)
+                {
+                    _logger.LogWarning("Add user failed for {Email}: {Message}", model.Email, result.Message);
+                    return BadRequest(new { Message = result.Message });
+                }
+
+                var successResult = (SuccessResponseResult)result;
+                _logger.LogInformation("Add user successful for {Email}", model.Email);
+                return Ok(new { Message = successResult.Message, User = successResult.Data });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during add user for {Email}.", model?.Email ?? "unknown");
+                return StatusCode(500, new { Message = "Đã xảy ra lỗi khi thêm người dùng.", Error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Updates an existing user (admin only).
+        /// </summary>
+        [HttpPut("users/update/{id}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> UpdateUser(int id, [FromBody] UpdateUserVModel model)
+        {
+            try
+            {
+                if (model == null)
+                {
+                    _logger.LogWarning("Update user attempt with null model.");
+                    return BadRequest(new { Message = "Dữ liệu người dùng không hợp lệ." });
+                }
+
+                _logger.LogInformation("Update user attempt for ID: {UserId} by admin: {AdminName}", id, User.Identity?.Name);
+                var result = await _authService.UpdateUserAsync(id, model);
+                if (!result.IsSuccess)
+                {
+                    _logger.LogWarning("Update user failed for ID {UserId}: {Message}", id, result.Message);
+                    return BadRequest(new { Message = result.Message });
+                }
+
+                var successResult = (SuccessResponseResult)result;
+                _logger.LogInformation("Update user successful for ID {UserId}", id);
+                return Ok(new { Message = successResult.Message, User = successResult.Data });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during update user for ID {UserId}.", id);
+                return StatusCode(500, new { Message = "Đã xảy ra lỗi khi cập nhật người dùng.", Error = ex.Message });
+            }
+        }
     }
 }
