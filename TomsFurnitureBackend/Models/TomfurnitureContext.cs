@@ -338,7 +338,6 @@ public partial class TomfurnitureContext : DbContext
             entity.Property(e => e.OrderDate)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
-            entity.Property(e => e.OrderDetailId).HasColumnName("OrderDetailID");
             entity.Property(e => e.OrderStaId).HasColumnName("OrderStaID");
             entity.Property(e => e.PaymentMethodId).HasColumnName("PaymentMethodID");
             entity.Property(e => e.PriceDiscount).HasColumnType("decimal(15, 2)");

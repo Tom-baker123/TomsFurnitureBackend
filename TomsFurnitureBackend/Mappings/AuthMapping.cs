@@ -166,7 +166,12 @@ namespace TomsFurnitureBackend.Extensions
                 RoleName = entity.Role?.RoleName ?? "Unknown"
             };
         }
-        // Ánh xạ AddUserVModel sang User entity
+
+        /// <summary>
+        /// Maps AddUserVModel to User entity.
+        /// </summary>
+        /// <param name="model">The AddUserVModel containing user data.</param>
+        /// <returns>A new User entity.</returns>
         public static User ToUserEntity(this AddUserVModel model)
         {
             if (model == null)
@@ -174,27 +179,12 @@ namespace TomsFurnitureBackend.Extensions
                 throw new ArgumentNullException(nameof(model), "AddUserVModel cannot be null.");
             }
 
-            bool gender;
-            if (string.IsNullOrWhiteSpace(model.Gender))
-            {
-                gender = false; // Mặc định là false nếu không có Gender
-            }
-            else
-            {
-                var normalizedGender = model.Gender.Trim().ToLower();
-                if (normalizedGender != "male" && normalizedGender != "female")
-                {
-                    throw new ArgumentException("Gender must be 'male' or 'female'.", nameof(model.Gender));
-                }
-                gender = normalizedGender == "male";
-            }
-
             return new User
             {
                 UserName = model.UserName,
                 Email = model.Email,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.Password),
-                Gender = gender,
+                Gender = model.Gender, // Sử dụng trực tiếp bool Gender
                 PhoneNumber = model.PhoneNumber,
                 UserAddress = model.UserAddress,
                 IsActive = model.IsActive,
@@ -204,7 +194,11 @@ namespace TomsFurnitureBackend.Extensions
             };
         }
 
-        // Cập nhật User entity từ UpdateUserVModel
+        /// <summary>
+        /// Updates User entity from UpdateUserVModel.
+        /// </summary>
+        /// <param name="entity">The User entity to update.</param>
+        /// <param name="model">The UpdateUserVModel containing updated data.</param>
         public static void UpdateUserEntity(this User entity, UpdateUserVModel model)
         {
             if (entity == null)
@@ -217,24 +211,9 @@ namespace TomsFurnitureBackend.Extensions
                 throw new ArgumentNullException(nameof(model), "UpdateUserVModel cannot be null.");
             }
 
-            bool gender;
-            if (string.IsNullOrWhiteSpace(model.Gender))
-            {
-                gender = entity.Gender; // Giữ nguyên nếu không cung cấp
-            }
-            else
-            {
-                var normalizedGender = model.Gender.Trim().ToLower();
-                if (normalizedGender != "male" && normalizedGender != "female")
-                {
-                    throw new ArgumentException("Gender must be 'male' or 'female'.", nameof(model.Gender));
-                }
-                gender = normalizedGender == "male";
-            }
-
             entity.UserName = model.UserName;
             entity.Email = model.Email;
-            entity.Gender = gender;
+            entity.Gender = model.Gender; // Sử dụng trực tiếp bool Gender
             entity.PhoneNumber = model.PhoneNumber;
             entity.UserAddress = model.UserAddress;
             entity.IsActive = model.IsActive ?? entity.IsActive;

@@ -33,8 +33,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Common\Models\" />
-    <Folder Include="Common\Contansts\" />
     <Folder Include="Utilities\" />
   </ItemGroup>
 
