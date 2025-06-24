@@ -79,19 +79,9 @@ public partial class TomfurnitureContext : DbContext
 
     public virtual DbSet<UserGuest> UserGuests { get; set; }
 
-    //    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    //#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-    //        => optionsBuilder.UseSqlServer("Data Source=ASUS;Initial Catalog=TOMFURNITURE;Integrated Security=True;Encrypt=True;Trust Server Certificate=True");
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        // Connection string is configured in Program.cs via AddDbContext
-        // No need to specify it here unless optionsBuilder is not configured
-        if (!optionsBuilder.IsConfigured)
-        {
-            // Optional: Log or throw an exception if the configuration is missing
-            throw new InvalidOperationException("DbContext options are not configured.");
-        }
-    }
+#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
+        => optionsBuilder.UseSqlServer("Data Source=ASUS;Initial Catalog=TOMFURNITURE;Integrated Security=True;Encrypt=True;Trust Server Certificate=True");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -229,6 +219,8 @@ public partial class TomfurnitureContext : DbContext
 
             entity.ToTable("ConfirmOTP");
 
+            entity.HasIndex(e => e.UserId, "UQ__ConfirmO__1788CCAD58F24DB7").IsUnique();
+
             entity.Property(e => e.CreatedDate).HasColumnType("datetime");
             entity.Property(e => e.ExpiredDate).HasColumnType("datetime");
             entity.Property(e => e.Otpcode)
@@ -237,8 +229,8 @@ public partial class TomfurnitureContext : DbContext
                 .HasColumnName("OTPCode");
             entity.Property(e => e.UserId).HasColumnName("UserID");
 
-            entity.HasOne(d => d.User).WithMany(p => p.ConfirmOtps)
-                .HasForeignKey(d => d.UserId)
+            entity.HasOne(d => d.User).WithOne(p => p.ConfirmOtp)
+                .HasForeignKey<ConfirmOtp>(d => d.UserId)
                 .HasConstraintName("FK__ConfirmOT__UserI__3D2915A8");
         });
 

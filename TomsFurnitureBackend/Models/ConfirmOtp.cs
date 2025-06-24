@@ -11,11 +11,11 @@ public partial class ConfirmOtp
 
     public DateTime? ExpiredDate { get; set; }
 
-    public bool CheckActive { get; set; }
-
     public DateTime? CreatedDate { get; set; }
 
     public int? UserId { get; set; }
+
+    public int FailedAttempt { get; set; }
 
     public virtual User? User { get; set; }
 }
