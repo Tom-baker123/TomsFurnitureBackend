@@ -7,43 +7,27 @@ namespace TomsFurnitureBackend.Extensions
     public static class AuthExtensions
     {
         /// <summary>
-        /// Maps RegisterVModel to User entity.
+        /// Ánh xạ RegisterVModel sang User entity.
         /// </summary>
-        /// <param name="model">The RegisterVModel containing user registration data.</param>
-        /// <param name="roleId">The ID of the role to assign to the user.</param>
-        /// <returns>A new User entity.</returns>
-        /// <exception cref="ArgumentException">Thrown when Gender is invalid.</exception>
+        /// <param name="model">RegisterVModel chứa dữ liệu đăng ký người dùng.</param>
+        /// <param name="roleId">ID của vai trò được gán cho người dùng.</param>
+        /// <returns>User entity mới.</returns>
         public static User ToUserEntity(this RegisterVModel model, int roleId)
         {
             if (model == null)
             {
-                throw new ArgumentNullException(nameof(model), "RegisterVModel cannot be null.");
-            }
-
-            bool gender;
-            if (string.IsNullOrWhiteSpace(model.Gender))
-            {
-                gender = false; // Default to false if Gender is null or empty
-            }
-            else
-            {
-                var normalizedGender = model.Gender.Trim().ToLower();
-                if (normalizedGender != "male" && normalizedGender != "female")
-                {
-                    throw new ArgumentException("Gender must be 'male' or 'female'.", nameof(model.Gender));
-                }
-                gender = normalizedGender == "male";
+                throw new ArgumentNullException(nameof(model), "RegisterVModel không được null.");
             }
 
             return new User
             {
                 UserName = model.UserName,
                 Email = model.Email,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.Password), // Hash password
-                Gender = gender,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.Password),
+                Gender = model.Gender, // Sử dụng trực tiếp bool Gender
                 PhoneNumber = model.PhoneNumber,
                 UserAddress = model.UserAddress,
-                IsActive = false, // Default for new users, requires OTP verification
+                IsActive = false, // Mặc định false, cần xác thực OTP
                 CreatedDate = DateTime.UtcNow,
                 CreatedBy = "System",
                 RoleId = roleId
@@ -51,16 +35,16 @@ namespace TomsFurnitureBackend.Extensions
         }
 
         /// <summary>
-        /// Creates a ConfirmOtp entity from user ID and OTP code.
+        /// Tạo ConfirmOtp entity từ user ID và mã OTP.
         /// </summary>
-        /// <param name="userId">The ID of the user associated with the OTP.</param>
-        /// <param name="otpCode">The OTP code to store.</param>
-        /// <returns>A new ConfirmOtp entity.</returns>
+        /// <param name="userId">ID của người dùng liên quan đến OTP.</param>
+        /// <param name="otpCode">Mã OTP để lưu trữ.</param>
+        /// <returns>ConfirmOtp entity mới.</returns>
         public static ConfirmOtp ToConfirmOtpEntity(int userId, string otpCode)
         {
             if (string.IsNullOrWhiteSpace(otpCode))
             {
-                throw new ArgumentException("OTP code cannot be null or empty.", nameof(otpCode));
+                throw new ArgumentException("Mã OTP không được null hoặc rỗng.", nameof(otpCode));
             }
 
             return new ConfirmOtp
@@ -68,73 +52,73 @@ namespace TomsFurnitureBackend.Extensions
                 UserId = userId,
                 Otpcode = otpCode,
                 ExpiredDate = DateTime.UtcNow.AddMinutes(30),
-                CheckActive = false,
-                CreatedDate = DateTime.UtcNow
+                CreatedDate = DateTime.UtcNow,
+                FailedAttempt = 0 // Khởi tạo số lần thất bại bằng 0
             };
         }
 
         /// <summary>
-        /// Updates ConfirmOtp entity with new OTP code and expiration.
+        /// Cập nhật ConfirmOtp entity với mã OTP mới và thời gian hết hạn.
         /// </summary>
-        /// <param name="entity">The ConfirmOtp entity to update.</param>
-        /// <param name="otpCode">The new OTP code.</param>
+        /// <param name="entity">ConfirmOtp entity cần cập nhật.</param>
+        /// <param name="otpCode">Mã OTP mới.</param>
         public static void UpdateConfirmOtpEntity(this ConfirmOtp entity, string otpCode)
         {
             if (entity == null)
             {
-                throw new ArgumentNullException(nameof(entity), "ConfirmOtp entity cannot be null.");
+                throw new ArgumentNullException(nameof(entity), "ConfirmOtp entity không được null.");
             }
 
             if (string.IsNullOrWhiteSpace(otpCode))
             {
-                throw new ArgumentException("OTP code cannot be null or empty.", nameof(otpCode));
+                throw new ArgumentException("Mã OTP không được null hoặc rỗng.", nameof(otpCode));
             }
 
             entity.Otpcode = otpCode;
             entity.ExpiredDate = DateTime.UtcNow.AddMinutes(30);
-            entity.CheckActive = false;
             entity.CreatedDate = DateTime.UtcNow;
+            entity.FailedAttempt = 0; // Reset số lần thất bại khi tạo OTP mới
         }
 
         /// <summary>
-        /// Maps User entity to RegisterVModel for response purposes.
+        /// Ánh xạ User entity sang RegisterVModel để trả về dữ liệu.
         /// </summary>
-        /// <param name="entity">The User entity to map.</param>
-        /// <returns>A RegisterVModel with user data.</returns>
+        /// <param name="entity">User entity để ánh xạ.</param>
+        /// <returns>RegisterVModel chứa dữ liệu người dùng.</returns>
         public static RegisterVModel ToRegisterVModel(this User entity)
         {
             if (entity == null)
             {
-                throw new ArgumentNullException(nameof(entity), "User entity cannot be null.");
+                throw new ArgumentNullException(nameof(entity), "User entity không được null.");
             }
 
             return new RegisterVModel
             {
                 UserName = entity.UserName,
                 Email = entity.Email,
-                Password = string.Empty, // Do not return password hash
-                Gender = entity.Gender ? "male" : "female",
+                Password = string.Empty, // Không trả về mật khẩu đã mã hóa
+                Gender = entity.Gender, // Trả về bool Gender
                 PhoneNumber = entity.PhoneNumber,
                 UserAddress = entity.UserAddress
             };
         }
 
         /// <summary>
-        /// Maps User and ConfirmOtp entities to ConfirmOtpVModel for response purposes.
+        /// Ánh xạ User và ConfirmOtp entity sang ConfirmOtpVModel để trả về dữ liệu.
         /// </summary>
-        /// <param name="user">The User entity.</param>
-        /// <param name="otp">The ConfirmOtp entity.</param>
-        /// <returns>A ConfirmOtpVModel with OTP data.</returns>
+        /// <param name="user">User entity.</param>
+        /// <param name="otp">ConfirmOtp entity.</param>
+        /// <returns>ConfirmOtpVModel chứa dữ liệu OTP.</returns>
         public static ConfirmOtpVModel ToConfirmOtpVModel(this User user, ConfirmOtp otp)
         {
             if (user == null)
             {
-                throw new ArgumentNullException(nameof(user), "User entity cannot be null.");
+                throw new ArgumentNullException(nameof(user), "User entity không được null.");
             }
 
             if (otp == null)
             {
-                throw new ArgumentNullException(nameof(otp), "ConfirmOtp entity cannot be null.");
+                throw new ArgumentNullException(nameof(otp), "ConfirmOtp entity không được null.");
             }
 
             return new ConfirmOtpVModel
@@ -144,12 +128,16 @@ namespace TomsFurnitureBackend.Extensions
             };
         }
 
-        // Ánh xạ mới: User entity sang UserVModel
+        /// <summary>
+        /// Ánh xạ User entity sang UserVModel để trả về thông tin người dùng.
+        /// </summary>
+        /// <param name="entity">User entity để ánh xạ.</param>
+        /// <returns>UserVModel chứa thông tin người dùng.</returns>
         public static UserVModel ToUserVModel(this User entity)
         {
             if (entity == null)
             {
-                throw new ArgumentNullException(nameof(entity), "User entity cannot be null.");
+                throw new ArgumentNullException(nameof(entity), "User entity không được null.");
             }
 
             return new UserVModel
@@ -157,7 +145,7 @@ namespace TomsFurnitureBackend.Extensions
                 Id = entity.Id,
                 UserName = entity.UserName,
                 Email = entity.Email,
-                Gender = entity.Gender ? "male" : "female",
+                Gender = entity.Gender, // Trả về bool Gender
                 PhoneNumber = entity.PhoneNumber,
                 UserAddress = entity.UserAddress,
                 IsActive = entity.IsActive,
@@ -168,15 +156,15 @@ namespace TomsFurnitureBackend.Extensions
         }
 
         /// <summary>
-        /// Maps AddUserVModel to User entity.
+        /// Ánh xạ AddUserVModel sang User entity.
         /// </summary>
-        /// <param name="model">The AddUserVModel containing user data.</param>
-        /// <returns>A new User entity.</returns>
+        /// <param name="model">AddUserVModel chứa dữ liệu người dùng.</param>
+        /// <returns>User entity mới.</returns>
         public static User ToUserEntity(this AddUserVModel model)
         {
             if (model == null)
             {
-                throw new ArgumentNullException(nameof(model), "AddUserVModel cannot be null.");
+                throw new ArgumentNullException(nameof(model), "AddUserVModel không được null.");
             }
 
             return new User
@@ -195,20 +183,20 @@ namespace TomsFurnitureBackend.Extensions
         }
 
         /// <summary>
-        /// Updates User entity from UpdateUserVModel.
+        /// Cập nhật User entity từ UpdateUserVModel.
         /// </summary>
-        /// <param name="entity">The User entity to update.</param>
-        /// <param name="model">The UpdateUserVModel containing updated data.</param>
+        /// <param name="entity">User entity cần cập nhật.</param>
+        /// <param name="model">UpdateUserVModel chứa dữ liệu cập nhật.</param>
         public static void UpdateUserEntity(this User entity, UpdateUserVModel model)
         {
             if (entity == null)
             {
-                throw new ArgumentNullException(nameof(entity), "User entity cannot be null.");
+                throw new ArgumentNullException(nameof(entity), "User entity không được null.");
             }
 
             if (model == null)
             {
-                throw new ArgumentNullException(nameof(model), "UpdateUserVModel cannot be null.");
+                throw new ArgumentNullException(nameof(model), "UpdateUserVModel không được null.");
             }
 
             entity.UserName = model.UserName;
