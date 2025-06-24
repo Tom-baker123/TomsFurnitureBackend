@@ -76,7 +76,7 @@
         public string UserName { get; set; } = null!;
         public string Email { get; set; } = null!;
         public string Password { get; set; } = null!;
-        public string? Gender { get; set; }
+        public bool Gender { get; set; } // Sửa từ string? sang bool
         public string? PhoneNumber { get; set; }
         public string? UserAddress { get; set; }
         public bool IsActive { get; set; } = true;
@@ -88,7 +88,7 @@
     {
         public string UserName { get; set; } = null!;
         public string Email { get; set; } = null!;
-        public string? Gender { get; set; }
+        public bool Gender { get; set; } // Sửa từ string? sang bool
         public string? PhoneNumber { get; set; }
         public string? UserAddress { get; set; }
         public bool? IsActive { get; set; }

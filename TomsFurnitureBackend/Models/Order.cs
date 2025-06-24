@@ -37,8 +37,6 @@ public partial class Order
 
     public int? PaymentMethodId { get; set; }
 
-    public int? OrderDetailId { get; set; }
-
     public int? PromotionId { get; set; }
 
     public DateTime? DeliveryDate { get; set; }

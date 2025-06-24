@@ -164,71 +164,42 @@ namespace TomsFurnitureBackend.Services
 
             return string.Empty;
         }
-        // Hàm xác thực dữ liệu đầu vào cho thêm người dùng
-        private static string ValidateAddUser(AddUserVModel model)
+        
+        
+        // Hàm ValidateUser chung cho AddUser và UpdateUser
+        private static string ValidateUser(string userName, string email, int roleId, bool isAdd = false, string? password = null)
         {
-            if (string.IsNullOrWhiteSpace(model.UserName))
+            if (string.IsNullOrWhiteSpace(userName))
             {
                 return "Tên người dùng là bắt buộc.";
             }
-            if (string.IsNullOrWhiteSpace(model.Email))
+            if (string.IsNullOrWhiteSpace(email))
             {
                 return "Email là bắt buộc.";
             }
             const string emailRegex = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
-            if (!Regex.IsMatch(model.Email.Trim(), emailRegex))
+            if (!Regex.IsMatch(email.Trim(), emailRegex))
             {
                 return "Định dạng email không hợp lệ.";
             }
-            if (string.IsNullOrWhiteSpace(model.Password))
+            if (isAdd) // Chỉ kiểm tra password khi thêm mới
             {
-                return "Mật khẩu là bắt buộc.";
+                if (string.IsNullOrWhiteSpace(password))
+                {
+                    return "Mật khẩu là bắt buộc.";
+                }
+                if (password.Length < 6)
+                {
+                    return "Mật khẩu phải có ít nhất 6 ký tự.";
+                }
             }
-            if (model.Password.Length < 6)
-            {
-                return "Mật khẩu phải có ít nhất 6 ký tự.";
-            }
-            if (!string.IsNullOrWhiteSpace(model.Gender) &&
-                model.Gender.Trim().ToLower() != "male" &&
-                model.Gender.Trim().ToLower() != "female")
-            {
-                return "Giới tính phải là 'Male' hoặc 'Female'.";
-            }
-            if (model.RoleId <= 0)
+            if (roleId <= 0)
             {
                 return "Vai trò là bắt buộc.";
             }
             return string.Empty;
         }
 
-        // Hàm xác thực dữ liệu đầu vào cho cập nhật người dùng
-        private static string ValidateUpdateUser(UpdateUserVModel model)
-        {
-            if (string.IsNullOrWhiteSpace(model.UserName))
-            {
-                return "Tên người dùng là bắt buộc.";
-            }
-            if (string.IsNullOrWhiteSpace(model.Email))
-            {
-                return "Email là bắt buộc.";
-            }
-            const string emailRegex = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
-            if (!Regex.IsMatch(model.Email.Trim(), emailRegex))
-            {
-                return "Định dạng email không hợp lệ.";
-            }
-            if (!string.IsNullOrWhiteSpace(model.Gender) &&
-                model.Gender.Trim().ToLower() != "male" &&
-                model.Gender.Trim().ToLower() != "female")
-            {
-                return "Giới tính phải là 'Male' hoặc 'Female'.";
-            }
-            if (model.RoleId <= 0)
-            {
-                return "Vai trò là bắt buộc.";
-            }
-            return string.Empty;
-        }
 
         // [1.] Hàm LoginAsync: Xử lý đăng nhập người dùng
         public async Task<ResponseResult> LoginAsync(LoginVModel model, HttpContext httpContext)
@@ -968,7 +939,7 @@ namespace TomsFurnitureBackend.Services
                 _logger.LogInformation("Bắt đầu thêm người dùng mới với email: {Email}", model.Email);
 
                 // B1: Xác thực dữ liệu đầu vào
-                var validationResult = ValidateAddUser(model);
+                var validationResult = ValidateUser(model.UserName, model.Email, model.RoleId, isAdd: true, model.Password);
                 if (!string.IsNullOrEmpty(validationResult))
                 {
                     _logger.LogWarning("Thêm người dùng thất bại cho {Email}: {Error}", model.Email, validationResult);
@@ -1017,7 +988,7 @@ namespace TomsFurnitureBackend.Services
                 _logger.LogInformation("Bắt đầu cập nhật người dùng với ID: {UserId}", id);
 
                 // B1: Xác thực dữ liệu đầu vào
-                var validationResult = ValidateUpdateUser(model);
+                var validationResult = ValidateUser(model.UserName, model.Email, model.RoleId);
                 if (!string.IsNullOrEmpty(validationResult))
                 {
                     _logger.LogWarning("Cập nhật người dùng thất bại cho ID {UserId}: {Error}", id, validationResult);

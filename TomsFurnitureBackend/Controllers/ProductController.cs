@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using OA.Domain.Common.Models;
 using System;
 using System.Threading.Tasks;
+using TomsFurnitureBackend.Common.Models;
 using TomsFurnitureBackend.Services.IServices;
 using TomsFurnitureBackend.VModels;
 using static TomsFurnitureBackend.VModels.ProductVModel;
@@ -94,11 +95,12 @@ namespace TomsFurnitureBackend.Controllers
         /// </summary>
         /// <returns>Trả về danh sách sản phẩm</returns>
         [HttpGet]
-        public async Task<ActionResult<List<ProductGetVModel>>> GetAllAsync()
+        public async Task<ActionResult<PaginationModel<ProductGetVModel>>> GetAllAsync([FromQuery] ProductFilterParams param)
         {
             try
+                
             {
-                var result = await _productService.GetAllAsync();
+                var result = await _productService.GetAllAsync(param); 
                 return Ok(result);
             }
             catch (Exception ex)

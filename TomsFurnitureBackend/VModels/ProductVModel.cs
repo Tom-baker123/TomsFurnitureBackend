@@ -1,12 +1,21 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
-using System.Text.Json.Serialization; // Add this namespace
+using System.Text.Json.Serialization;
+using TomsFurnitureBackend.Common.Contansts; // Add this namespace
 
 namespace TomsFurnitureBackend.VModels
 {
     public class ProductVModel
     {
+        // VModel cho Phân Trang
+        public class ProductFilterParams
+        {
+            public string? search { get; set; }
+            public int PageSize { get; set; } = Number.Pagination.DefaultPageSize;
+            public int PageNumber { get; set; } = Number.Pagination.DefaultPageNumber;
+        }
+
         public class ProductCreateVModel
         {
             

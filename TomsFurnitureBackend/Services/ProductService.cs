@@ -1,5 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using OA.Domain.Common.Models;
+using TomsFurnitureBackend.Common.Models;
 using TomsFurnitureBackend.Extensions;
 using TomsFurnitureBackend.Models;
 using TomsFurnitureBackend.Services.IServices;
@@ -209,26 +211,37 @@ namespace TomsFurnitureBackend.Services
         }
 
         // Lấy tất cả sản phẩm
-        public async Task<List<ProductGetVModel>> GetAllAsync()
+        public async Task<PaginationModel<ProductGetVModel>> GetAllAsync(ProductFilterParams param)
         {
-            var products = await _context.Products
-                .Include(p => p.Brand)
-                .Include(p => p.Category)
-                .Include(p => p.Countries)
-                .Include(p => p.Supplier)
-                .Include(p => p.ProductVariants)
-                    .ThenInclude(pv => pv.Color)
-                .Include(p => p.ProductVariants)
-                    .ThenInclude(pv => pv.Size)
-                .Include(p => p.ProductVariants)
-                    .ThenInclude(pv => pv.Material)
-                .Include(p => p.ProductVariants)
-                    .ThenInclude(pv => pv.Unit)
-                .Include(p => p.Sliders.Where(s => s.IsActive == true))
-                .OrderBy(p => p.Id)
+            var query = _context.Products
+        .Include(p => p.Brand)
+        .Include(p => p.Category)
+        .Include(p => p.Countries)
+        .Include(p => p.Supplier)
+        .Include(p => p.ProductVariants).ThenInclude(pv => pv.Color)
+        .Include(p => p.ProductVariants).ThenInclude(pv => pv.Size)
+        .Include(p => p.ProductVariants).ThenInclude(pv => pv.Material)
+        .Include(p => p.ProductVariants).ThenInclude(pv => pv.Unit)
+        .Include(p => p.Sliders.Where(s => s.IsActive == true))
+        .OrderBy(p => p.Id)
+        .AsQueryable();
+
+            var totalCount = await query.CountAsync();
+
+            var pagedData = await query
+                .Skip((param.PageNumber - 1) * param.PageSize)
+                .Take(param.PageSize)
                 .ToListAsync();
 
-            return products.Select(p => p.ToGetVModel()).ToList();
+            var result = new PaginationModel<ProductGetVModel>
+            {
+                Items = pagedData.Select(ProductMapping.ToGetVModel).ToList(),
+                TotalCount = totalCount,
+                PageNumber = param.PageNumber,
+                PageSize = param.PageSize
+            };
+
+            return result;
         }
 
         // Lấy sản phẩm theo ID
