@@ -684,15 +684,7 @@ namespace TomsFurnitureBackend.Services
                         address.IsActive = false;
                         _logger.LogInformation("Deactivated address {AddressId} for user {UserId}.", address.Id, id);
                     }
-                    // Bước 12: Vô hiệu hóa Shippings
-                    var shippings = await _context.Shippings
-                        .Where(s => s.UserId == id)
-                        .ToListAsync();
-                    foreach (var shipping in shippings)
-                    {
-                        shipping.IsActive = false;
-                        _logger.LogInformation("Deactivated shipping {ShippingId} for user {UserId}.", shipping.Id, id);
-                    }
+                    
                     // Bước 13: Kiểm tra banner liên quan
                     var banners = await _context.Banners
                         .Where(b => b.UserId == id)
