@@ -35,5 +35,7 @@ public partial class Banner
 
     public int? UserId { get; set; }
 
+    public string ImageUrlmobile { get; set; } = null!;
+
     public virtual User? User { get; set; }
 }

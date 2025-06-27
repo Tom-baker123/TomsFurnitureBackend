@@ -25,6 +25,7 @@ builder.Services.AddDbContext<TomfurnitureContext>(options =>
     options.UseSqlServer(connectionString));
 
 //3. Services
+builder.Services.AddScoped<IBannerService, BannerService>();
 builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<IPromotionTypeService, PromotionTypeService>();
 builder.Services.AddScoped<IPromotionService, PromotionService>();

@@ -63,8 +63,6 @@ public partial class TomfurnitureContext : DbContext
 
     public virtual DbSet<Role> Roles { get; set; }
 
-    public virtual DbSet<Shipping> Shippings { get; set; }
-
     public virtual DbSet<Size> Sizes { get; set; }
 
     public virtual DbSet<Slider> Sliders { get; set; }
@@ -118,6 +116,9 @@ public partial class TomfurnitureContext : DbContext
             entity.Property(e => e.ImageUrl)
                 .HasMaxLength(255)
                 .HasColumnName("ImageURL");
+            entity.Property(e => e.ImageUrlmobile)
+                .HasMaxLength(255)
+                .HasColumnName("ImageURLMobile");
             entity.Property(e => e.LinkUrl)
                 .HasMaxLength(255)
                 .HasColumnName("LinkURL");
@@ -589,27 +590,6 @@ public partial class TomfurnitureContext : DbContext
                 .IsUnicode(false);
             entity.Property(e => e.UpdatedBy).HasMaxLength(255);
             entity.Property(e => e.UpdatedDate).HasColumnType("datetime");
-        });
-
-        modelBuilder.Entity<Shipping>(entity =>
-        {
-            entity.HasKey(e => e.Id).HasName("PK__Shipping__3214EC07E194EF48");
-
-            entity.ToTable("Shipping");
-
-            entity.Property(e => e.City).HasMaxLength(100);
-            entity.Property(e => e.CreatedBy).HasMaxLength(255);
-            entity.Property(e => e.CreatedDate).HasColumnType("datetime");
-            entity.Property(e => e.District).HasMaxLength(100);
-            entity.Property(e => e.ShippingPrice).HasColumnType("decimal(18, 2)");
-            entity.Property(e => e.UpdatedBy).HasMaxLength(255);
-            entity.Property(e => e.UpdatedDate).HasColumnType("datetime");
-            entity.Property(e => e.UserId).HasColumnName("UserID");
-            entity.Property(e => e.Ward).HasMaxLength(100);
-
-            entity.HasOne(d => d.User).WithMany(p => p.Shippings)
-                .HasForeignKey(d => d.UserId)
-                .HasConstraintName("FK__Shipping__UserID__0D7A0286");
         });
 
         modelBuilder.Entity<Size>(entity =>

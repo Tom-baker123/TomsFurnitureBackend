@@ -50,6 +50,4 @@ public partial class User
     public virtual ICollection<ProductReview> ProductReviews { get; set; } = new List<ProductReview>();
 
     public virtual Role Role { get; set; } = null!;
-
-    public virtual ICollection<Shipping> Shippings { get; set; } = new List<Shipping>();
 }
