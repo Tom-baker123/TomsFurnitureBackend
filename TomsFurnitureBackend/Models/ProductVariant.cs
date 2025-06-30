@@ -33,6 +33,8 @@ public partial class ProductVariant
 
     public string? UpdatedBy { get; set; }
 
+    public virtual ICollection<Cart> Carts { get; set; } = new List<Cart>();
+
     public virtual Color Color { get; set; } = null!;
 
     public virtual Material Material { get; set; } = null!;
