@@ -19,80 +19,201 @@ namespace TomsFurnitureBackend.Services
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        // Kiểm tra validation cho Product
-        private async Task<ResponseResult?> ValidateProductAsync(ProductCreateVModel model, int? excludeId = null)
-        {
-            // Kiểm tra tên sản phẩm đã tồn tại
-            var existingProduct = await _context.Products
-                .FirstOrDefaultAsync(p => p.ProductName == model.ProductName && (excludeId == null || p.Id != excludeId));
-            if (existingProduct != null)
-            {
-                return new ErrorResponseResult("Tên sản phẩm đã tồn tại.");
-            }
-
-            // Kiểm tra các khóa ngoại
-            if (model.BrandId.HasValue && !await _context.Brands.AnyAsync(b => b.Id == model.BrandId))
-            {
-                return new ErrorResponseResult($"Thương hiệu với ID {model.BrandId} không tồn tại.");
-            }
-            if (model.CategoryId.HasValue && !await _context.Categories.AnyAsync(c => c.Id == model.CategoryId))
-            {
-                return new ErrorResponseResult($"Danh mục với ID {model.CategoryId} không tồn tại.");
-            }
-            if (model.CountriesId.HasValue && !await _context.Countries.AnyAsync(c => c.Id == model.CountriesId))
-            {
-                return new ErrorResponseResult($"xuất xứ với ID {model.CountriesId} không tồn tại.");
-            }
-            if (model.SupplierId.HasValue && !await _context.Suppliers.AnyAsync(s => s.Id == model.SupplierId))
-            {
-                return new ErrorResponseResult($"Nhà cung cấp với ID {model.SupplierId} không tồn tại.");
-            }
-
-            return null; // Không có lỗi
-        }
-
-        // Kiểm tra validation cho ProductVariants
-        private async Task<ResponseResult?> ValidateProductVariantsAsync(List<ProductVariantCreateVModel> variants)
-        {
-            foreach (var variant in variants)
-            {
-                if (!await _context.Colors.AnyAsync(c => c.Id == variant.ColorId))
-                {
-                    return new ErrorResponseResult($"Màu với ID {variant.ColorId} không tồn tại.");
-                }
-                if (!await _context.Sizes.AnyAsync(s => s.Id == variant.SizeId))
-                {
-                    return new ErrorResponseResult($"Kích thước với ID {variant.SizeId} không tồn tại.");
-                }
-                if (!await _context.Materials.AnyAsync(m => m.Id == variant.MaterialId))
-                {
-                    return new ErrorResponseResult($"Chất liệu với ID {variant.MaterialId} không tồn tại.");
-                }
-                if (!await _context.Units.AnyAsync(u => u.Id == variant.UnitId))
-                {
-                    return new ErrorResponseResult($"Đơn vị với ID {variant.UnitId} không tồn tại.");
-                }
-            }
-            return null; // Không có lỗi
-        }
-
-        // Kiểm tra validation cho Update
-        private async Task<ResponseResult?> ValidateUpdateProductAsync(ProductUpdateVModel model)
+        // Hàm validation chung cho sản phẩm và biến thể
+        private async Task<ResponseResult?> ValidateProductAndVariantsAsync(object model, bool isUpdate = false, int? excludeId = null)
         {
             if (model == null)
             {
-                return new ErrorResponseResult("Dữ liệu sản phẩm không được cung cấp.");
+                return new ErrorResponseResult("Product data is required.");
             }
 
-            if (string.IsNullOrWhiteSpace(model.ProductName))
+            ProductCreateVModel? createModel = null;
+            ProductUpdateVModel? updateModel = null;
+            ProductVariantUpdateVModel? variantModel = null;
+
+            if (model is ProductCreateVModel cModel)
             {
-                return new ErrorResponseResult("Tên sản phẩm không được để trống.");
+                createModel = cModel;
+            }
+            else if (model is ProductUpdateVModel uModel)
+            {
+                updateModel = uModel;
+                createModel = uModel; // UpdateModel kế thừa CreateModel
+            }
+            else if (model is ProductVariantUpdateVModel vModel)
+            {
+                variantModel = vModel;
             }
 
-            var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == model.Id);
-            if (product == null)
+            // Validation cho sản phẩm
+            if (createModel != null)
             {
-                return new ErrorResponseResult($"Không tìm thấy sản phẩm với ID: {model.Id}");
+                // Kiểm tra tên sản phẩm
+                if (string.IsNullOrWhiteSpace(createModel.ProductName))
+                {
+                    return new ErrorResponseResult("Product name is required.");
+                }
+
+                // Kiểm tra tên sản phẩm trùng lặp, loại trừ ID hiện tại trong trường hợp cập nhật
+                int excludeIdValidation = isUpdate ? excludeId ?? 0 : 0;
+                var existingProduct = await _context.Products
+                    .FirstOrDefaultAsync(p => p.ProductName == createModel.ProductName && (excludeIdValidation == 0 || p.Id != excludeIdValidation));
+                if (existingProduct != null)
+                {
+                    return new ErrorResponseResult("Product name already exists.");
+                }
+
+                // Kiểm tra khóa ngoại với kiểm tra null rõ ràng
+                if (createModel.BrandId.HasValue && !await _context.Brands.AnyAsync(b => b.Id == createModel.BrandId.Value))
+                {
+                    return new ErrorResponseResult($"Brand with ID {createModel.BrandId} does not exist.");
+                }
+                if (createModel.CategoryId.HasValue && !await _context.Categories.AnyAsync(c => c.Id == createModel.CategoryId.Value))
+                {
+                    return new ErrorResponseResult($"Category with ID {createModel.CategoryId} does not exist.");
+                }
+                if (createModel.CountriesId.HasValue && !await _context.Countries.AnyAsync(c => c.Id == createModel.CountriesId.Value))
+                {
+                    return new ErrorResponseResult($"Country with ID {createModel.CountriesId} does not exist.");
+                }
+                if (createModel.SupplierId.HasValue && !await _context.Suppliers.AnyAsync(s => s.Id == createModel.SupplierId.Value))
+                {
+                    return new ErrorResponseResult($"Supplier with ID {createModel.SupplierId} does not exist.");
+                }
+
+                // Validation cho biến thể trong ProductCreateVModel
+                if (createModel is ProductCreateVModel create)
+                {
+                    foreach (var variant in create.ProductVariants)
+                    {
+                        if (!await _context.Colors.AnyAsync(c => c.Id == variant.ColorId))
+                        {
+                            return new ErrorResponseResult($"Color with ID {variant.ColorId} does not exist.");
+                        }
+                        if (!await _context.Sizes.AnyAsync(s => s.Id == variant.SizeId))
+                        {
+                            return new ErrorResponseResult($"Size with ID {variant.SizeId} does not exist.");
+                        }
+                        if (!await _context.Materials.AnyAsync(m => m.Id == variant.MaterialId))
+                        {
+                            return new ErrorResponseResult($"Material with ID {variant.MaterialId} does not exist.");
+                        }
+                        if (!await _context.Units.AnyAsync(u => u.Id == variant.UnitId))
+                        {
+                            return new ErrorResponseResult($"Unit with ID {variant.UnitId} does not exist.");
+                        }
+                        if (variant.OriginalPrice < 0)
+                        {
+                            return new ErrorResponseResult("Original price cannot be negative.");
+                        }
+                        if (variant.DiscountedPrice.HasValue && variant.DiscountedPrice.Value < 0)
+                        {
+                            return new ErrorResponseResult("Discounted price cannot be negative.");
+                        }
+                        if (variant.StockQty < 0)
+                        {
+                            return new ErrorResponseResult("Stock quantity cannot be negative.");
+                        }
+                    }
+                }
+
+                // Validation cho biến thể trong ProductUpdateVModel
+                if (createModel is ProductUpdateVModel update)
+                {
+                    foreach (var variant in update.ProductVariants)
+                    {
+                        // Kiểm tra biến thể tồn tại nếu là cập nhật
+                        if (variant.Id > 0)
+                        {
+                            var existingVariant = await _context.ProductVariants.FirstOrDefaultAsync(pv => pv.Id == variant.Id);
+                            if (existingVariant == null)
+                            {
+                                return new ErrorResponseResult($"Product variant with ID {variant.Id} not found.");
+                            }
+                            if (existingVariant.ProductId != update.Id)
+                            {
+                                return new ErrorResponseResult($"Product variant with ID {variant.Id} does not belong to product with ID {update.Id}.");
+                            }
+                        }
+                        // Kiểm tra khóa ngoại
+                        if (!await _context.Colors.AnyAsync(c => c.Id == variant.ColorId))
+                        {
+                            return new ErrorResponseResult($"Color with ID {variant.ColorId} does not exist.");
+                        }
+                        if (!await _context.Sizes.AnyAsync(s => s.Id == variant.SizeId))
+                        {
+                            return new ErrorResponseResult($"Size with ID {variant.SizeId} does not exist.");
+                        }
+                        if (!await _context.Materials.AnyAsync(m => m.Id == variant.MaterialId))
+                        {
+                            return new ErrorResponseResult($"Material with ID {variant.MaterialId} does not exist.");
+                        }
+                        if (!await _context.Units.AnyAsync(u => u.Id == variant.UnitId))
+                        {
+                            return new ErrorResponseResult($"Unit with ID {variant.UnitId} does not exist.");
+                        }
+                        if (variant.OriginalPrice < 0)
+                        {
+                            return new ErrorResponseResult("Original price cannot be negative.");
+                        }
+                        if (variant.DiscountedPrice.HasValue && variant.DiscountedPrice.Value < 0)
+                        {
+                            return new ErrorResponseResult("Discounted price cannot be negative.");
+                        }
+                        if (variant.StockQty < 0)
+                        {
+                            return new ErrorResponseResult("Stock quantity cannot be negative.");
+                        }
+                    }
+                }
+            }
+
+            // Validation cho cập nhật sản phẩm
+            if (updateModel != null && isUpdate)
+            {
+                var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == updateModel.Id);
+                if (product == null)
+                {
+                    return new ErrorResponseResult($"Product with ID {updateModel.Id} not found.");
+                }
+            }
+
+            // Validation cho biến thể đơn lẻ
+            if (variantModel != null)
+            {
+                var variant = await _context.ProductVariants.FirstOrDefaultAsync(pv => pv.Id == variantModel.Id);
+                if (variant == null)
+                {
+                    return new ErrorResponseResult($"Product variant with ID {variantModel.Id} not found.");
+                }
+                if (!await _context.Colors.AnyAsync(c => c.Id == variantModel.ColorId))
+                {
+                    return new ErrorResponseResult($"Color with ID {variantModel.ColorId} does not exist.");
+                }
+                if (!await _context.Sizes.AnyAsync(s => s.Id == variantModel.SizeId))
+                {
+                    return new ErrorResponseResult($"Size with ID {variantModel.SizeId} does not exist.");
+                }
+                if (!await _context.Materials.AnyAsync(m => m.Id == variantModel.MaterialId))
+                {
+                    return new ErrorResponseResult($"Material with ID {variantModel.MaterialId} does not exist.");
+                }
+                if (!await _context.Units.AnyAsync(u => u.Id == variantModel.UnitId))
+                {
+                    return new ErrorResponseResult($"Unit with ID {variantModel.UnitId} does not exist.");
+                }
+                if (variantModel.OriginalPrice < 0)
+                {
+                    return new ErrorResponseResult("Original price cannot be negative.");
+                }
+                if (variantModel.DiscountedPrice.HasValue && variantModel.DiscountedPrice.Value < 0)
+                {
+                    return new ErrorResponseResult("Discounted price cannot be negative.");
+                }
+                if (variantModel.StockQty < 0)
+                {
+                    return new ErrorResponseResult("Stock quantity cannot be negative.");
+                }
             }
 
             return null; // Không có lỗi
@@ -104,16 +225,10 @@ namespace TomsFurnitureBackend.Services
             try
             {
                 // Kiểm tra validation
-                var productValidationResult = await ValidateProductAsync(model);
-                if (productValidationResult != null)
+                var validationResult = await ValidateProductAndVariantsAsync(model);
+                if (validationResult != null)
                 {
-                    return productValidationResult;
-                }
-
-                var variantValidationResult = await ValidateProductVariantsAsync(model.ProductVariants);
-                if (variantValidationResult != null)
-                {
-                    return variantValidationResult;
+                    return validationResult;
                 }
 
                 // Chuyển đổi từ ViewModel sang Entity
@@ -121,20 +236,20 @@ namespace TomsFurnitureBackend.Services
 
                 // Thêm Product vào DbContext
                 _context.Products.Add(product);
-                await _context.SaveChangesAsync(); // Lưu để sinh Product.Id
+                await _context.SaveChangesAsync();
 
                 // Lấy dữ liệu mới nhất để trả về
                 var productVm = await GetByIdAsync(product.Id);
-                return new SuccessResponseResult(productVm, "Thêm sản phẩm và biến thể thành công");
+                return new SuccessResponseResult(productVm, "Product and its variants created successfully.");
             }
             catch (DbUpdateException dbEx)
             {
                 var errorMessage = dbEx.InnerException?.Message ?? dbEx.Message;
-                return new ErrorResponseResult($"Lỗi khi tạo sản phẩm: {errorMessage}");
+                return new ErrorResponseResult($"Error creating product: {errorMessage}");
             }
             catch (Exception ex)
             {
-                return new ErrorResponseResult($"Lỗi khi tạo sản phẩm: {ex.Message}");
+                return new ErrorResponseResult($"Error creating product: {ex.Message}");
             }
         }
 
@@ -144,45 +259,49 @@ namespace TomsFurnitureBackend.Services
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                // Tìm sản phẩm theo ID, bao gồm các ProductVariants
+                // Tìm sản phẩm theo ID, bao gồm các ProductVariants, ProductReviews và Sliders
                 var product = await _context.Products
                     .Include(p => p.ProductVariants)
-                    .Include(p => p.Carts)
                     .Include(p => p.ProductReviews)
                     .Include(p => p.Sliders)
                     .FirstOrDefaultAsync(p => p.Id == id);
                 if (product == null)
                 {
-                    return new ErrorResponseResult($"Không tìm thấy sản phẩm với ID: {id}");
+                    return new ErrorResponseResult($"Product with ID {id} not found.");
                 }
 
-                // Kiểm tra xem ProductVariants có được tham chiếu trong OrderDetails không
+                // Kiểm tra ràng buộc trong OrderDetails
                 var variantIds = product.ProductVariants.Select(pv => pv.Id).ToList();
                 var hasOrderDetails = await _context.OrderDetails
-                    .AnyAsync(od => variantIds.Contains((int)od.ProVarId));
+                    .AnyAsync(od => od.ProVarId.HasValue && variantIds.Contains(od.ProVarId.Value));
 
                 if (hasOrderDetails)
                 {
-                    return new ErrorResponseResult("Không thể xóa sản phẩm vì nó đã được sử dụng trong các đơn hàng.");
+                    return new ErrorResponseResult("Cannot delete product because it is used in orders.");
                 }
 
-                // Kiểm tra các ràng buộc
-                if (product.Carts.Any())
+                // Kiểm tra ràng buộc trong Cart thông qua ProductVariants
+                var hasCarts = await _context.Carts
+                    .AnyAsync(c => variantIds.Contains(c.ProVarId));
+
+                if (hasCarts)
                 {
-                    return new ErrorResponseResult($"Cannot delete the product because it is referenced in the cart table.");
+                    return new ErrorResponseResult("Cannot delete product because it is referenced in the cart table.");
                 }
 
+                // Kiểm tra ràng buộc trong ProductReviews
                 if (product.ProductReviews.Any())
                 {
-                    return new ErrorResponseResult($"Cannot delete the product because it is referenced in the ProductReviews table.");
+                    return new ErrorResponseResult("Cannot delete product because it is referenced in the ProductReviews table.");
                 }
 
+                // Xóa các Slider liên quan
                 if (product.Sliders.Any())
                 {
-                    return new ErrorResponseResult($"Cannot delete the product because it is referenced in the Sliders table.");
+                    _context.Sliders.RemoveRange(product.Sliders);
                 }
 
-                // Xóa các ProductVariant thủ công
+                // Xóa các ProductVariant
                 if (product.ProductVariants.Any())
                 {
                     _context.ProductVariants.RemoveRange(product.ProductVariants);
@@ -195,18 +314,18 @@ namespace TomsFurnitureBackend.Services
                 // Commit transaction
                 await transaction.CommitAsync();
 
-                return new SuccessResponseResult(null, "Xóa sản phẩm thành công");
+                return new SuccessResponseResult(null, "Product deleted successfully.");
             }
             catch (DbUpdateException dbEx)
             {
                 await transaction.RollbackAsync();
                 var errorMessage = dbEx.InnerException?.Message ?? dbEx.Message;
-                return new ErrorResponseResult($"Lỗi khi xóa sản phẩm: {errorMessage}");
+                return new ErrorResponseResult($"Error deleting product: {errorMessage}");
             }
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                return new ErrorResponseResult($"Lỗi khi xóa sản phẩm: {ex.Message}");
+                return new ErrorResponseResult($"Error deleting product: {ex.Message}");
             }
         }
 
@@ -214,17 +333,17 @@ namespace TomsFurnitureBackend.Services
         public async Task<PaginationModel<ProductGetVModel>> GetAllAsync(ProductFilterParams param)
         {
             var query = _context.Products
-        .Include(p => p.Brand)
-        .Include(p => p.Category)
-        .Include(p => p.Countries)
-        .Include(p => p.Supplier)
-        .Include(p => p.ProductVariants).ThenInclude(pv => pv.Color)
-        .Include(p => p.ProductVariants).ThenInclude(pv => pv.Size)
-        .Include(p => p.ProductVariants).ThenInclude(pv => pv.Material)
-        .Include(p => p.ProductVariants).ThenInclude(pv => pv.Unit)
-        .Include(p => p.Sliders.Where(s => s.IsActive == true))
-        .OrderBy(p => p.Id)
-        .AsQueryable();
+                .Include(p => p.Brand)
+                .Include(p => p.Category)
+                .Include(p => p.Countries)
+                .Include(p => p.Supplier)
+                .Include(p => p.ProductVariants).ThenInclude(pv => pv.Color)
+                .Include(p => p.ProductVariants).ThenInclude(pv => pv.Size)
+                .Include(p => p.ProductVariants).ThenInclude(pv => pv.Material)
+                .Include(p => p.ProductVariants).ThenInclude(pv => pv.Unit)
+                .Include(p => p.Sliders.Where(s => s.IsActive == true))
+                .OrderBy(p => p.Id)
+                .AsQueryable();
 
             var totalCount = await query.CountAsync();
 
@@ -266,41 +385,71 @@ namespace TomsFurnitureBackend.Services
             return product?.ToGetVModel();
         }
 
-        // Cập nhật sản phẩm
+        // Cập nhật sản phẩm và các biến thể
         public async Task<ResponseResult> UpdateAsync(ProductUpdateVModel model)
         {
+            using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
                 // Kiểm tra validation
-                var updateValidationResult = await ValidateUpdateProductAsync(model);
-                if (updateValidationResult != null)
+                var validationResult = await ValidateProductAndVariantsAsync(model, true, model.Id);
+                if (validationResult != null)
                 {
-                    return updateValidationResult;
+                    return validationResult;
                 }
 
-                var productValidationResult = await ValidateProductAsync(model, model.Id);
-                if (productValidationResult != null)
+                // Tìm sản phẩm với các biến thể hiện có
+                var product = await _context.Products
+                    .Include(p => p.ProductVariants)
+                    .FirstOrDefaultAsync(p => p.Id == model.Id);
+                if (product == null)
                 {
-                    return productValidationResult;
+                    return new ErrorResponseResult($"Product with ID {model.Id} not found.");
                 }
 
-                // Cập nhật thông tin sản phẩm
-                var product = await _context.Products.FirstAsync(p => p.Id == model.Id); // Đã kiểm tra tồn tại
-                product.UpdateEntity(model);
+                // Kiểm tra ràng buộc trước khi xóa hoặc cập nhật biến thể
+                var variantIdsToRemove = product.ProductVariants
+                    .Select(pv => pv.Id)
+                    .Except(model.ProductVariants.Where(v => v.Id > 0).Select(v => v.Id))
+                    .ToList();
+                if (variantIdsToRemove.Any())
+                {
+                    var hasOrderDetails = await _context.OrderDetails
+                        .AnyAsync(od => od.ProVarId.HasValue && variantIdsToRemove.Contains(od.ProVarId.Value));
+                    if (hasOrderDetails)
+                    {
+                        return new ErrorResponseResult("Cannot delete product variants because they are used in orders.");
+                    }
+
+                    var hasCarts = await _context.Carts
+                        .AnyAsync(c => variantIdsToRemove.Contains(c.ProVarId));
+                    if (hasCarts)
+                    {
+                        return new ErrorResponseResult("Cannot delete product variants because they are referenced in the cart table.");
+                    }
+                }
+
+                // Cập nhật sản phẩm và biến thể
+                product.UpdateEntity(model, _context);
                 await _context.SaveChangesAsync();
+
+                // Commit transaction
+                await transaction.CommitAsync();
 
                 // Lấy dữ liệu mới nhất để trả về
                 var productVm = await GetByIdAsync(product.Id);
-                return new SuccessResponseResult(productVm, "Cập nhật sản phẩm thành công");
+                return new SuccessResponseResult(productVm, "Product and variants updated successfully.");
             }
             catch (DbUpdateException dbEx)
             {
+                await transaction.RollbackAsync();
                 var errorMessage = dbEx.InnerException?.Message ?? dbEx.Message;
-                return new ErrorResponseResult($"Lỗi khi cập nhật sản phẩm: {errorMessage}");
+                return new ErrorResponseResult($"Error updating product: {errorMessage}");
             }
             catch (Exception ex)
             {
-                return new ErrorResponseResult($"Lỗi khi cập nhật sản phẩm: {ex.Message}");
+                await transaction.RollbackAsync();
+                return new ErrorResponseResult($"Error updating product: {ex.Message}");
             }
         }
 
@@ -309,18 +458,14 @@ namespace TomsFurnitureBackend.Services
         {
             try
             {
-                // Kiểm tra dữ liệu đầu vào
-                if (model == null)
+                // Kiểm tra validation
+                var validationResult = await ValidateProductAndVariantsAsync(model);
+                if (validationResult != null)
                 {
-                    return new ErrorResponseResult("Dữ liệu biến thể sản phẩm không được cung cấp.");
+                    return validationResult;
                 }
 
-                if (model.Id <= 0)
-                {
-                    return new ErrorResponseResult("ID biến thể sản phẩm không hợp lệ.");
-                }
-
-                // Kiểm tra biến thể có tồn tại
+                // Cập nhật biến thể
                 var variant = await _context.ProductVariants
                     .Include(pv => pv.Color)
                     .Include(pv => pv.Size)
@@ -330,32 +475,10 @@ namespace TomsFurnitureBackend.Services
 
                 if (variant == null)
                 {
-                    return new ErrorResponseResult($"Không tìm thấy biến thể sản phẩm với ID: {model.Id}");
+                    return new ErrorResponseResult($"Product variant with ID {model.Id} not found.");
                 }
 
-                // Kiểm tra validation cho các khóa ngoại
-                var variantValidationResult = await ValidateProductVariantsAsync(new List<ProductVariantCreateVModel>
-                {
-                    new ProductVariantCreateVModel
-                    {
-                        OriginalPrice = model.OriginalPrice,
-                        DiscountedPrice = model.DiscountedPrice,
-                        StockQty = model.StockQty,
-                        ColorId = model.ColorId,
-                        SizeId = model.SizeId,
-                        MaterialId = model.MaterialId,
-                        UnitId = model.UnitId
-                    }
-                });
-
-                if (variantValidationResult != null)
-                {
-                    return variantValidationResult;
-                }
-
-                // Sử dụng mapping để cập nhật biến thể
                 variant.UpdateVariantEntity(model);
-
                 await _context.SaveChangesAsync();
 
                 // Lấy dữ liệu sản phẩm mới nhất để trả về
@@ -372,20 +495,20 @@ namespace TomsFurnitureBackend.Services
 
                 if (product == null)
                 {
-                    return new ErrorResponseResult("Không tìm thấy sản phẩm chứa biến thể.");
+                    return new ErrorResponseResult("Product containing the variant not found.");
                 }
 
                 var productVm = product.ToGetVModel();
-                return new SuccessResponseResult(productVm, "Cập nhật biến thể sản phẩm thành công");
+                return new SuccessResponseResult(productVm, "Product variant updated successfully.");
             }
             catch (DbUpdateException dbEx)
             {
                 var errorMessage = dbEx.InnerException?.Message ?? dbEx.Message;
-                return new ErrorResponseResult($"Lỗi khi cập nhật biến thể sản phẩm: {errorMessage}");
+                return new ErrorResponseResult($"Error updating product variant: {errorMessage}");
             }
             catch (Exception ex)
             {
-                return new ErrorResponseResult($"Lỗi khi cập nhật biến thể sản phẩm: {ex.Message}");
+                return new ErrorResponseResult($"Error updating product variant: {ex.Message}");
             }
         }
     }
