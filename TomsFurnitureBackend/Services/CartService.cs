@@ -21,6 +21,7 @@ namespace TomsFurnitureBackend.Services
         private readonly IAuthService _authService;
         private readonly ILogger<CartService> _logger;
 
+        // Khởi tạo dependencies
         public CartService(TomfurnitureContext context, IAuthService authService, ILogger<CartService> logger)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
@@ -28,6 +29,7 @@ namespace TomsFurnitureBackend.Services
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
+        // Lấy UserId hiện tại từ HttpContext
         private async Task<int?> GetCurrentUserIdAsync(HttpContext httpContext)
         {
             var authStatus = await _authService.GetAuthStatusAsync(httpContext.User, httpContext);
@@ -38,16 +40,20 @@ namespace TomsFurnitureBackend.Services
             return null;
         }
 
+        // Lấy giỏ hàng từ cookies
         private List<CartCreateVModel> GetCartFromCookies(HttpContext httpContext)
         {
             var cartJson = httpContext.Request.Cookies["GuestCart"];
             if (string.IsNullOrEmpty(cartJson))
             {
+                _logger.LogInformation("Không tìm thấy cookie GuestCart."); // Logger 1
                 return new List<CartCreateVModel>();
             }
             try
             {
-                return JsonConvert.DeserializeObject<List<CartCreateVModel>>(cartJson) ?? new List<CartCreateVModel>();
+                var cartItems = JsonConvert.DeserializeObject<List<CartCreateVModel>>(cartJson) ?? new List<CartCreateVModel>();
+                _logger.LogInformation("Đọc cookie GuestCart thành công với {Count} mục: {Content}", cartItems.Count, cartJson); // Logger 2
+                return cartItems;
             }
             catch
             {
@@ -56,9 +62,11 @@ namespace TomsFurnitureBackend.Services
             }
         }
 
+        // Lưu giỏ hàng vào cookies
         private void SaveCartToCookies(HttpContext httpContext, List<CartCreateVModel> cartItems)
         {
             var cartJson = JsonConvert.SerializeObject(cartItems);
+            _logger.LogInformation("Lưu cookie GuestCart với nội dung: {Content}", cartJson); // Logger 3
             var cookieOptions = new CookieOptions
             {
                 HttpOnly = true,
@@ -69,11 +77,12 @@ namespace TomsFurnitureBackend.Services
             httpContext.Response.Cookies.Append("GuestCart", cartJson, cookieOptions);
         }
 
+        // Kiểm tra tính hợp lệ của mục giỏ hàng
         private async Task<ResponseResult?> ValidateCartItemAsync(CartCreateVModel model)
         {
-            if (!await _context.Products.AnyAsync(p => p.Id == model.ProId))
+            if (!await _context.ProductVariants.AnyAsync(p => p.Id == model.ProVarId))
             {
-                return new ErrorResponseResult($"Sản phẩm với ID {model.ProId} không tồn tại.");
+                return new ErrorResponseResult($"Biến thể sản phẩm với ID {model.ProVarId} không tồn tại.");
             }
             if (model.Quantity <= 0)
             {
@@ -82,6 +91,7 @@ namespace TomsFurnitureBackend.Services
             return null;
         }
 
+        // Thêm sản phẩm vào giỏ hàng
         public async Task<ResponseResult> AddToCartAsync(CartCreateVModel model, HttpContext httpContext)
         {
             try
@@ -96,7 +106,7 @@ namespace TomsFurnitureBackend.Services
                 if (userId.HasValue)
                 {
                     var existingCartItem = await _context.Carts
-                        .FirstOrDefaultAsync(c => c.UserId == userId && c.ProId == model.ProId && c.IsActive == true);
+                        .FirstOrDefaultAsync(c => c.UserId == userId && c.ProVarId == model.ProVarId && c.IsActive == true);
                     if (existingCartItem != null)
                     {
                         existingCartItem.Quantity += model.Quantity;
@@ -110,12 +120,12 @@ namespace TomsFurnitureBackend.Services
                     }
                     await _context.SaveChangesAsync();
                     var cart = await GetCartAsync(httpContext);
-                    return new SuccessResponseResult(cart, "Thêm vào giỏ hàng thành công.");
+                    return new SuccessResponseResult(cart, "Added to cart successfully.");
                 }
                 else
                 {
                     var cartItems = GetCartFromCookies(httpContext);
-                    var existingItem = cartItems.FirstOrDefault(c => c.ProId == model.ProId);
+                    var existingItem = cartItems.FirstOrDefault(c => c.ProVarId == model.ProVarId);
                     if (existingItem != null)
                     {
                         existingItem.Quantity += model.Quantity;
@@ -128,17 +138,18 @@ namespace TomsFurnitureBackend.Services
                     return new SuccessResponseResult(cartItems.Select(c => new CartGetVModel
                     {
                         Quantity = c.Quantity,
-                        ProId = c.ProId
-                    }).ToList(), "Thêm vào giỏ hàng thành công.");
+                        ProVarId = c.ProVarId
+                    }).ToList(), "Added to cart successfully.");
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi thêm vào giỏ hàng: {Error}", ex.Message);
-                return new ErrorResponseResult($"Lỗi khi thêm vào giỏ hàng: {ex.Message}");
+                _logger.LogError(ex, "Error adding to cart: {Error}", ex.Message);
+                return new ErrorResponseResult($"Error adding to cart: {ex.Message}");
             }
         }
 
+        // Cập nhật giỏ hàng
         public async Task<ResponseResult> UpdateCartAsync(CartUpdateVModel model, HttpContext httpContext)
         {
             try
@@ -156,37 +167,38 @@ namespace TomsFurnitureBackend.Services
                         .FirstOrDefaultAsync(c => c.Id == model.Id && c.UserId == userId && c.IsActive == true);
                     if (cartItem == null)
                     {
-                        return new ErrorResponseResult($"Không tìm thấy mục giỏ hàng với ID {model.Id}.");
+                        return new ErrorResponseResult($"Cart item with ID {model.Id} not found.");
                     }
                     cartItem.UpdateEntity(model);
                     await _context.SaveChangesAsync();
                     var cart = await GetCartAsync(httpContext);
-                    return new SuccessResponseResult(cart, "Cập nhật giỏ hàng thành công.");
+                    return new SuccessResponseResult(cart, "Cart updated successfully.");
                 }
                 else
                 {
                     var cartItems = GetCartFromCookies(httpContext);
-                    var existingItem = cartItems.FirstOrDefault(c => c.ProId == model.ProId);
+                    var existingItem = cartItems.FirstOrDefault(c => c.ProVarId == model.ProVarId);
                     if (existingItem == null)
                     {
-                        return new ErrorResponseResult($"Không tìm thấy mục giỏ hàng với ProId {model.ProId}.");
+                        return new ErrorResponseResult($"Cart item with ProVarId {model.ProVarId} not found.");
                     }
                     existingItem.Quantity = model.Quantity;
                     SaveCartToCookies(httpContext, cartItems);
                     return new SuccessResponseResult(cartItems.Select(c => new CartGetVModel
                     {
                         Quantity = c.Quantity,
-                        ProId = c.ProId
-                    }).ToList(), "Cập nhật giỏ hàng thành công.");
+                        ProVarId = c.ProVarId
+                    }).ToList(), "Cart updated successfully.");
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi cập nhật giỏ hàng: {Error}", ex.Message);
-                return new ErrorResponseResult($"Lỗi khi cập nhật giỏ hàng: {ex.Message}");
+                _logger.LogError(ex, "Error updating cart: {Error}", ex.Message);
+                return new ErrorResponseResult($"Error updating cart: {ex.Message}");
             }
         }
 
+        // Xóa mục khỏi giỏ hàng
         public async Task<ResponseResult> RemoveFromCartAsync(int id, HttpContext httpContext)
         {
             try
@@ -198,46 +210,48 @@ namespace TomsFurnitureBackend.Services
                         .FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId && c.IsActive == true);
                     if (cartItem == null)
                     {
-                        return new ErrorResponseResult($"Không tìm thấy mục giỏ hàng với ID {id}.");
+                        return new ErrorResponseResult($"Cart item with ID {id} not found.");
                     }
                     cartItem.IsActive = false;
                     cartItem.UpdatedDate = DateTime.UtcNow;
                     cartItem.UpdatedBy = userId.ToString();
                     await _context.SaveChangesAsync();
                     var cart = await GetCartAsync(httpContext);
-                    return new SuccessResponseResult(cart, "Xóa mục khỏi giỏ hàng thành công.");
+                    return new SuccessResponseResult(cart, "Item removed from cart successfully.");
                 }
                 else
                 {
                     var cartItems = GetCartFromCookies(httpContext);
-                    var existingItem = cartItems.FirstOrDefault(c => c.ProId == id);
+                    var existingItem = cartItems.FirstOrDefault(c => c.ProVarId == id);
                     if (existingItem == null)
                     {
-                        return new ErrorResponseResult($"Không tìm thấy mục giỏ hàng với ProId {id}.");
+                        return new ErrorResponseResult($"Cart item with ProVarId {id} not found.");
                     }
                     cartItems.Remove(existingItem);
                     SaveCartToCookies(httpContext, cartItems);
                     return new SuccessResponseResult(cartItems.Select(c => new CartGetVModel
                     {
                         Quantity = c.Quantity,
-                        ProId = c.ProId
-                    }).ToList(), "Xóa mục khỏi giỏ hàng thành công.");
+                        ProVarId = c.ProVarId
+                    }).ToList(), "Item removed from cart successfully.");
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi xóa mục khỏi giỏ hàng: {Error}", ex.Message);
-                return new ErrorResponseResult($"Lỗi khi xóa mục khỏi giỏ hàng: {ex.Message}");
+                _logger.LogError(ex, "Error removing from cart: {Error}", ex.Message);
+                return new ErrorResponseResult($"Error removing from cart: {ex.Message}");
             }
         }
 
+        // Lấy giỏ hàng
         public async Task<List<CartGetVModel>> GetCartAsync(HttpContext httpContext)
         {
             var userId = await GetCurrentUserIdAsync(httpContext);
             if (userId.HasValue)
             {
                 var cartItems = await _context.Carts
-                    .Include(c => c.Pro)
+                    .Include(c => c.ProVar)
+                    .ThenInclude(pv => pv.Product)
                     .Where(c => c.UserId == userId && c.IsActive == true)
                     .ToListAsync();
                 return cartItems.Select(c => c.ToGetVModel()).ToList();
@@ -245,19 +259,22 @@ namespace TomsFurnitureBackend.Services
             else
             {
                 var cartItems = GetCartFromCookies(httpContext);
-                var productIds = cartItems.Select(c => c.ProId).ToList();
-                var products = await _context.Products
-                    .Where(p => productIds.Contains(p.Id))
+                var productVarIds = cartItems.Select(c => c.ProVarId).ToList();
+                var productVariants = await _context.ProductVariants
+                    .Include(pv => pv.Product)
+
+                    .Where(pv => productVarIds.Contains(pv.Id))
                     .ToListAsync();
                 return cartItems.Select(c => new CartGetVModel
                 {
                     Quantity = c.Quantity,
-                    ProId = c.ProId,
-                    ProductName = products.FirstOrDefault(p => p.Id == c.ProId)?.ProductName
+                    ProVarId = c.ProVarId,
+                    ProductName = productVariants.FirstOrDefault(pv => pv.Id == c.ProVarId)?.Product?.ProductName
                 }).ToList();
             }
         }
 
+        // Hợp nhất giỏ hàng từ cookies
         public async Task<ResponseResult> MergeCartFromCookiesAsync(HttpContext httpContext)
         {
             try
@@ -265,13 +282,13 @@ namespace TomsFurnitureBackend.Services
                 var userId = await GetCurrentUserIdAsync(httpContext);
                 if (!userId.HasValue)
                 {
-                    return new ErrorResponseResult("Người dùng chưa đăng nhập.");
+                    return new ErrorResponseResult("User is not logged in.");
                 }
 
                 var cartItems = GetCartFromCookies(httpContext);
                 if (!cartItems.Any())
                 {
-                    return new SuccessResponseResult(null, "Không có giỏ hàng trong cookie để hợp nhất.");
+                    return new SuccessResponseResult(null, "No cart items in cookies to merge.");
                 }
 
                 foreach (var item in cartItems)
@@ -283,7 +300,7 @@ namespace TomsFurnitureBackend.Services
                     }
 
                     var existingCartItem = await _context.Carts
-                        .FirstOrDefaultAsync(c => c.UserId == userId && c.ProId == item.ProId && c.IsActive == true);
+                        .FirstOrDefaultAsync(c => c.UserId == userId && c.ProVarId == item.ProVarId && c.IsActive == true);
                     if (existingCartItem != null)
                     {
                         existingCartItem.Quantity += item.Quantity;
@@ -300,12 +317,12 @@ namespace TomsFurnitureBackend.Services
                 await _context.SaveChangesAsync();
                 httpContext.Response.Cookies.Delete("GuestCart");
                 var cart = await GetCartAsync(httpContext);
-                return new SuccessResponseResult(cart, "Hợp nhất giỏ hàng thành công.");
+                return new SuccessResponseResult(cart, "Cart merged successfully.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi hợp nhất giỏ hàng từ cookie: {Error}", ex.Message);
-                return new ErrorResponseResult($"Lỗi khi hợp nhất giỏ hàng: {ex.Message}");
+                _logger.LogError(ex, "Error merging cart from cookies: {Error}", ex.Message);
+                return new ErrorResponseResult($"Error merging cart: {ex.Message}");
             }
         }
     }

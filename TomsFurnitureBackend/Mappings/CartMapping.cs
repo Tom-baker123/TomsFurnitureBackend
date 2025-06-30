@@ -6,12 +6,13 @@ namespace TomsFurnitureBackend.Extensions
 {
     public static class CartMapping
     {
+        // Chuyển từ CartCreateVModel sang Cart entity, sử dụng ProVarId
         public static Cart ToEntity(this CartCreateVModel model, int? userId = null)
         {
             return new Cart
             {
                 Quantity = model.Quantity,
-                ProId = model.ProId,
+                ProVarId = model.ProVarId,
                 UserId = userId,
                 IsActive = true,
                 CreatedDate = DateTime.UtcNow,
@@ -19,14 +20,16 @@ namespace TomsFurnitureBackend.Extensions
             };
         }
 
+        // Cập nhật Cart entity từ CartUpdateVModel, sử dụng ProVarId
         public static void UpdateEntity(this Cart entity, CartUpdateVModel model)
         {
             entity.Quantity = model.Quantity;
-            entity.ProId = model.ProId;
+            entity.ProVarId = model.ProVarId;
             entity.UpdatedDate = DateTime.UtcNow;
             entity.UpdatedBy = entity.UserId?.ToString() ?? "Guest";
         }
 
+        // Chuyển từ Cart entity sang CartGetVModel, lấy ProductName từ ProductVariant
         public static CartGetVModel ToGetVModel(this Cart entity)
         {
             return new CartGetVModel
@@ -39,8 +42,8 @@ namespace TomsFurnitureBackend.Extensions
                 CreatedBy = entity.CreatedBy,
                 UpdatedBy = entity.UpdatedBy,
                 UserId = entity.UserId,
-                ProId = entity.ProId,
-                ProductName = entity.Pro?.ProductName
+                ProVarId = entity.ProVarId,
+                ProductName = entity.ProVar?.Product?.ProductName
             };
         }
     }

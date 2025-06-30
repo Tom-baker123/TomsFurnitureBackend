@@ -21,9 +21,9 @@ public partial class Cart
 
     public int? UserId { get; set; }
 
-    public int? ProId { get; set; }
+    public int ProVarId { get; set; }
 
-    public virtual Product? Pro { get; set; }
+    public virtual ProductVariant ProVar { get; set; } = null!;
 
     public virtual User? User { get; set; }
 }

@@ -6,16 +6,12 @@ namespace TomsFurnitureBackend.VModels
     {
         public class CartCreateVModel
         {
-            [Required(ErrorMessage = "Số lượng là bắt buộc.")]
             public int Quantity { get; set; }
-
-            [Required(ErrorMessage = "ID sản phẩm là bắt buộc.")]
-            public int ProId { get; set; }
+            public int ProVarId { get; set; }
         }
 
         public class CartUpdateVModel : CartCreateVModel
         {
-            [Required(ErrorMessage = "ID giỏ hàng là bắt buộc.")]
             public int Id { get; set; }
         }
 
@@ -29,7 +25,7 @@ namespace TomsFurnitureBackend.VModels
             public string? CreatedBy { get; set; }
             public string? UpdatedBy { get; set; }
             public int? UserId { get; set; }
-            public int? ProId { get; set; }
+            public int ProVarId { get; set; }
             public string? ProductName { get; set; }
         }
     }

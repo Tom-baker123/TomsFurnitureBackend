@@ -153,18 +153,19 @@ public partial class TomfurnitureContext : DbContext
 
             entity.ToTable("Cart");
 
-            entity.HasIndex(e => new { e.ProId, e.UserId }, "UQ__Cart__B37A193B716286C5").IsUnique();
+            entity.HasIndex(e => new { e.ProVarId, e.UserId }, "UQ__Cart__B37A193B716286C5").IsUnique();
 
             entity.Property(e => e.CreatedBy).HasMaxLength(255);
             entity.Property(e => e.CreatedDate).HasColumnType("datetime");
-            entity.Property(e => e.ProId).HasColumnName("ProID");
+            entity.Property(e => e.ProVarId).HasColumnName("ProVarID");
             entity.Property(e => e.UpdatedBy).HasMaxLength(255);
             entity.Property(e => e.UpdatedDate).HasColumnType("datetime");
             entity.Property(e => e.UserId).HasColumnName("UserID");
 
-            entity.HasOne(d => d.Pro).WithMany(p => p.Carts)
-                .HasForeignKey(d => d.ProId)
-                .HasConstraintName("FK__Cart__ProID__51300E55");
+            entity.HasOne(d => d.ProVar).WithMany(p => p.Carts)
+                .HasForeignKey(d => d.ProVarId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Cart_ProVarID");
 
             entity.HasOne(d => d.User).WithMany(p => p.Carts)
                 .HasForeignKey(d => d.UserId)
