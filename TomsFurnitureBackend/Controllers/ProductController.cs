@@ -52,6 +52,16 @@ namespace TomsFurnitureBackend.Controllers
 
                 // Trả về kết quả thành công với ID sản phẩm
                 var successResult = result as SuccessResponseResult;
+                if (successResult == null)
+                {
+                    _logger.LogWarning("Result is not a SuccessResponseResult when creating product.");
+                    return StatusCode(500, new { Message = "Unexpected error occurred while creating the product." });
+                }
+                if (successResult.Data == null)
+                {
+                    _logger.LogWarning("SuccessResponseResult.Data is null when creating product.");
+                    return StatusCode(500, new { Message = "Unexpected error occurred while creating the product." });
+                }
                 return CreatedAtAction(nameof(GetById), new { id = successResult.Data.Id }, new
                 {
                     Message = successResult.Message,
@@ -98,9 +108,8 @@ namespace TomsFurnitureBackend.Controllers
         public async Task<ActionResult<PaginationModel<ProductGetVModel>>> GetAllAsync([FromQuery] ProductFilterParams param)
         {
             try
-                
             {
-                var result = await _productService.GetAllAsync(param); 
+                var result = await _productService.GetAllAsync(param);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -111,9 +120,9 @@ namespace TomsFurnitureBackend.Controllers
         }
 
         /// <summary>
-        /// Cập nhật thông tin sản phẩm
+        /// Cập nhật thông tin sản phẩm và các biến thể
         /// </summary>
-        /// <param name="productModel">Dữ liệu sản phẩm cần cập nhật, bao gồm ID trong body</param>
+        /// <param name="productModel">Dữ liệu sản phẩm cần cập nhật, bao gồm ID và danh sách biến thể trong body</param>
         /// <returns>Trả về thông tin sản phẩm đã cập nhật hoặc thông báo lỗi</returns>
         [HttpPut]
         public async Task<IActionResult> UpdateAsync([FromBody] ProductUpdateVModel productModel)
@@ -134,12 +143,19 @@ namespace TomsFurnitureBackend.Controllers
                     return BadRequest(new { Message = "Valid product ID is required in the request body." });
                 }
 
-                // Gọi service để cập nhật sản phẩm
+                // Gọi service để cập nhật sản phẩm và biến thể
                 var result = await _productService.UpdateAsync(productModel);
                 if (!result.IsSuccess)
                 {
                     _logger.LogWarning("Failed to update product: {Message}", result.Message);
                     return BadRequest(new { Message = result.Message });
+                }
+
+                // Kiểm tra result.Data để tránh dereference null
+                if (result.Data == null)
+                {
+                    _logger.LogWarning("Unexpected null data when updating product with ID {id}", productModel.Id);
+                    return StatusCode(500, new { Message = "Unexpected error occurred while updating the product." });
                 }
 
                 // Trả về kết quả thành công
@@ -151,8 +167,8 @@ namespace TomsFurnitureBackend.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while updating product with ID {id}: {Error}", productModel?.Id, ex.Message);
-                return StatusCode(500, new { Message = "An error occurred while updating the product." });
+                _logger.LogError(ex, "Error occurred while updating product with ID {id}: {Error}", productModel?.Id ?? 0, ex.Message);
+                return StatusCode(500, new { Message = "An error occurred while updating the product and its variants." });
             }
         }
 
@@ -207,6 +223,13 @@ namespace TomsFurnitureBackend.Controllers
                     return BadRequest(new { Message = result.Message });
                 }
 
+                // Kiểm tra result.Data để tránh dereference null
+                if (result.Data == null)
+                {
+                    _logger.LogWarning("Unexpected null data when updating product variant with ID {id}", variantModel.Id);
+                    return StatusCode(500, new { Message = "Unexpected error occurred while updating the product variant." });
+                }
+
                 // Trả về kết quả thành công
                 return Ok(new
                 {
@@ -217,7 +240,7 @@ namespace TomsFurnitureBackend.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while updating product variant with ID {id}: {Error}",
-                    variantModel?.Id, ex.Message);
+                    variantModel?.Id ?? 0, ex.Message);
                 return StatusCode(500, new { Message = "An error occurred while updating the product variant." });
             }
         }

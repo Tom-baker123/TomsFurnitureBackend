@@ -42,9 +42,29 @@ namespace TomsFurnitureBackend.Extensions
             };
         }
 
-        // Cập nhật Entity Product từ ProductUpdateVModel
-        public static void UpdateEntity(this Product entity, ProductUpdateVModel model)
+        // Chuyển từ ProductVariantUpdateVModel sang Entity ProductVariant (dùng cho cả tạo mới và cập nhật)
+        public static ProductVariant ToEntity(this ProductVariantUpdateVModel model)
         {
+            return new ProductVariant
+            {
+                Id = model.Id,
+                OriginalPrice = model.OriginalPrice,
+                DiscountedPrice = model.DiscountedPrice,
+                StockQty = model.StockQty,
+                ColorId = model.ColorId,
+                SizeId = model.SizeId,
+                MaterialId = model.MaterialId,
+                UnitId = model.UnitId,
+                IsActive = model.IsActive ?? true,
+                CreatedDate = model.Id == 0 ? DateTime.UtcNow : null, // Chỉ set CreatedDate cho biến thể mới
+                UpdatedDate = model.Id > 0 ? DateTime.UtcNow : null // Set UpdatedDate khi cập nhật
+            };
+        }
+
+        // Cập nhật Entity Product từ ProductUpdateVModel, bao gồm xử lý biến thể
+        public static void UpdateEntity(this Product entity, ProductUpdateVModel model, TomfurnitureContext context)
+        {
+            // Cập nhật thông tin sản phẩm chính
             entity.ProductName = model.ProductName;
             entity.SpecificationDescription = model.SpecificationDescription;
             entity.BrandId = model.BrandId;
@@ -53,6 +73,38 @@ namespace TomsFurnitureBackend.Extensions
             entity.SupplierId = model.SupplierId;
             entity.IsActive = model.IsActive ?? entity.IsActive;
             entity.UpdatedDate = DateTime.UtcNow;
+
+            // Xử lý các biến thể
+            var existingVariantIds = entity.ProductVariants.Select(pv => pv.Id).ToList();
+            var updatedVariantIds = model.ProductVariants.Where(v => v.Id > 0).Select(v => v.Id).ToList();
+
+            //// Xóa các biến thể không còn trong danh sách cập nhật
+            //var variantsToRemove = entity.ProductVariants.Where(pv => !updatedVariantIds.Contains(pv.Id)).ToList();
+            //foreach (var variant in variantsToRemove)
+            //{
+            //    context.ProductVariants.Remove(variant);
+            //}
+
+            // Thêm hoặc cập nhật biến thể
+            foreach (var variantModel in model.ProductVariants)
+            {
+                if (variantModel.Id == 0)
+                {
+                    // Thêm biến thể mới
+                    var newVariant = variantModel.ToEntity();
+                    newVariant.ProductId = entity.Id;
+                    entity.ProductVariants.Add(newVariant);
+                }
+                else
+                {
+                    // Cập nhật biến thể hiện có
+                    var existingVariant = entity.ProductVariants.FirstOrDefault(pv => pv.Id == variantModel.Id);
+                    if (existingVariant != null)
+                    {
+                        existingVariant.UpdateVariantEntity(variantModel);
+                    }
+                }
+            }
         }
 
         // Chuyển từ Entity Product sang ProductGetVModel
@@ -83,16 +135,17 @@ namespace TomsFurnitureBackend.Extensions
                     OriginalPrice = pv.OriginalPrice,
                     DiscountedPrice = pv.DiscountedPrice,
                     StockQty = pv.StockQty,
-                    ColorId = pv.ColorId, // Thay ColorName thành ColorId
+                    ColorId = pv.ColorId,
                     ColorName = pv.Color?.ColorName,
-                    SizeId = pv.SizeId, // Thay SizeName thành SizeId
+                    SizeId = pv.SizeId,
                     SizeName = pv.Size?.SizeName,
-                    MaterialId = pv.MaterialId, // Thay MaterialName thành MaterialId
+                    MaterialId = pv.MaterialId,
                     MaterialName = pv.Material?.MaterialName,
-                    UnitId = pv.UnitId, // Thay UnitName thành UnitId
-                    UnitName = pv.Unit?.UnitName,
+                    UnitId = pv.UnitId,
+                    UnitName = pv.Unit?.UnitName
                 }).ToList() ?? new List<ProductVModel.ProductVariantGetVModel>(),
-                Sliders = entity.Sliders?.Where(s => s.IsActive == true).Select(s => new SliderGetVModel {
+                Sliders = entity.Sliders?.Where(s => s.IsActive == true).Select(s => new SliderGetVModel
+                {
                     Id = s.Id,
                     Title = s.Title,
                     Description = s.Description,
@@ -107,10 +160,12 @@ namespace TomsFurnitureBackend.Extensions
                     CreatedDate = s.CreatedDate,
                     UpdatedDate = s.UpdatedDate,
                     CreatedBy = s.CreatedBy,
-                    UpdatedBy = s.UpdatedBy
+                    UpdatedBy = s.UpdatedBy,
+                    ProductId = s.ProductId
                 }).ToList() ?? new List<SliderGetVModel>()
             };
         }
+
         // Ánh xạ biến thể
         public static void UpdateVariantEntity(this ProductVariant entity, ProductVModel.ProductVariantUpdateVModel model)
         {

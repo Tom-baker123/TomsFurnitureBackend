@@ -1,14 +1,10 @@
-﻿using System.Collections.Generic;
-using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
-using System.Text.Json.Serialization;
-using TomsFurnitureBackend.Common.Contansts; // Add this namespace
+﻿using System.Text.Json.Serialization;
+using TomsFurnitureBackend.Common.Contansts;
 
 namespace TomsFurnitureBackend.VModels
 {
     public class ProductVModel
     {
-        // VModel cho Phân Trang
         public class ProductFilterParams
         {
             public string? search { get; set; }
@@ -18,33 +14,21 @@ namespace TomsFurnitureBackend.VModels
 
         public class ProductCreateVModel
         {
-            
             public string ProductName { get; set; } = null!;
-
-
             public string? SpecificationDescription { get; set; }
-
-
             public int? BrandId { get; set; }
-
-
             public int? CategoryId { get; set; }
-
-
             public int? CountriesId { get; set; }
-
-
             public int? SupplierId { get; set; }
-
-
             public List<ProductVariantCreateVModel> ProductVariants { get; set; } = new List<ProductVariantCreateVModel>();
         }
 
         public class ProductUpdateVModel : ProductCreateVModel
         {
             public bool? IsActive { get; set; }
-            [JsonPropertyOrder(-1)] // Negative value ensures Id appears first
             public int Id { get; set; }
+            // Sử dụng ProductVariantUpdateVModel để hỗ trợ cả tạo mới và cập nhật biến thể
+            public new List<ProductVariantUpdateVModel> ProductVariants { get; set; } = new List<ProductVariantUpdateVModel>();
         }
 
         public class ProductGetVModel : ProductUpdateVModel
@@ -58,80 +42,48 @@ namespace TomsFurnitureBackend.VModels
             public string? CategoryName { get; set; }
             public string? CountryName { get; set; }
             public string? SupplierName { get; set; }
-            public List<ProductVariantGetVModel> ProductVariants { get; set; } = new List<ProductVariantGetVModel>();
+            public new List<ProductVariantGetVModel> ProductVariants { get; set; } = new List<ProductVariantGetVModel>();
             public List<SliderGetVModel> Sliders { get; set; } = new List<SliderGetVModel>();
         }
 
         public class ProductVariantCreateVModel
         {
-
             public decimal OriginalPrice { get; set; }
-
-
             public decimal? DiscountedPrice { get; set; }
-
-
             public int StockQty { get; set; }
-
-
             public int ColorId { get; set; }
-
-
             public int SizeId { get; set; }
-
-
             public int MaterialId { get; set; }
-
-
             public int UnitId { get; set; }
-
-
-            // public bool? IsActive { get; set; }
         }
 
         public class ProductVariantUpdateVModel
         {
             [JsonPropertyOrder(-1)]
             public int Id { get; set; }
-
             public decimal OriginalPrice { get; set; }
-
             public decimal? DiscountedPrice { get; set; }
-
             public int StockQty { get; set; }
-
             public int ColorId { get; set; }
-
             public int SizeId { get; set; }
-
             public int MaterialId { get; set; }
-
             public int UnitId { get; set; }
-
             public bool? IsActive { get; set; }
         }
 
         public class ProductVariantGetVModel
         {
             public int Id { get; set; }
-
-
             public decimal OriginalPrice { get; set; }
-
-
             public decimal? DiscountedPrice { get; set; }
-
-
             public int StockQty { get; set; }
-
-
-            public int ColorId { get; set; } // Thay ColorName thành ColorId
+            public int ColorId { get; set; }
             public string? ColorName { get; set; }
-            public int SizeId { get; set; } // Thay SizeName thành SizeId
+            public int SizeId { get; set; }
             public string? SizeName { get; set; }
-            public int MaterialId { get; set; } // Thay MaterialName thành MaterialId
+            public int MaterialId { get; set; }
             public string? MaterialName { get; set; }
-            public int UnitId { get; set; } // Thay UnitName thành UnitId
+            public int UnitId { get; set; }
             public string? UnitName { get; set; }
         }
     }
