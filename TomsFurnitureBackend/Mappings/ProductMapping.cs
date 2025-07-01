@@ -151,8 +151,6 @@ namespace TomsFurnitureBackend.Extensions
                     Description = s.Description,
                     ImageUrl = s.ImageUrl,
                     LinkUrl = s.LinkUrl,
-                    StartDate = s.StartDate,
-                    EndDate = s.EndDate,
                     IsPoster = s.IsPoster,
                     Position = s.Position,
                     DisplayOrder = s.DisplayOrder,
