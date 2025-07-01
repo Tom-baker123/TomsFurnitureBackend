@@ -15,10 +15,6 @@ public partial class Slider
 
     public string LinkUrl { get; set; } = null!;
 
-    public DateTime StartDate { get; set; }
-
-    public DateTime EndDate { get; set; }
-
     public bool? IsPoster { get; set; }
 
     public string? Position { get; set; }

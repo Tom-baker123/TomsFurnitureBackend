@@ -28,10 +28,6 @@ namespace TomsFurnitureBackend.Controllers
         {
             try
             {
-                // Kiểm tra trùng tên
-                //var existingProduct = await _sliderService.GetProductByNameAsync(slidervModel.Name);
-                //if (existingProduct != null) { return BadRequest(new { Message = "Product name already exists." }); }
-
                 // Xử lý upload ảnh
                 string imageUrl = null;
                 if (ImageFile != null && ImageFile.Length > 0)
@@ -71,8 +67,9 @@ namespace TomsFurnitureBackend.Controllers
                 var successResult = result as SuccessResponseResult;
                 return CreatedAtAction(nameof(GetById), new { id = successResult.Id }, new
                 {
+                    SliderID = successResult.Data?.Id,
                     Message = successResult.Message,
-                    ProductId = successResult.Id
+                    ProductId = successResult.Data?.ProductId
                 });
             }
             catch (Exception ex)
@@ -101,24 +98,21 @@ namespace TomsFurnitureBackend.Controllers
             return await _sliderService.GetAllAsync();
         }
 
-        [HttpDelete]
-        public async Task<ResponseResult> Delete(int id)
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
         {
-            // Xóa Sldier dựa trên id 
-            return await _sliderService.DeleteAsync(id);
+            // Bước 1: Gọi service để xóa Slider
+            var result = await _sliderService.DeleteAsync(id);
+
+            // Bước 2: Trả về kết quả
+            return Ok(new { Success = result.IsSuccess, Message = result.Message });
         }
 
         [HttpPut]
-        public async Task<ActionResult> UpdateAsync(int id, [FromForm] SliderUpdateVModel sliderModel, IFormFile? ImageFile = null)
+        public async Task<ActionResult> UpdateAsync([FromForm] SliderUpdateVModel sliderModel, IFormFile? ImageFile = null)
         {
             try
             {
-                // Kiểm tra ID hợp lệ
-                if (id != sliderModel.Id)
-                {
-                    return BadRequest("ID trong URL không khớp với ID trong model.");
-                }
-
                 // Xử lý upload ảnh nếu có
                 string? imageUrl = null;
                 // Kiểm tra file ảnh khi truyền vào không null thì execute.

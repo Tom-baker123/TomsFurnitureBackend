@@ -5,17 +5,16 @@ namespace TomsFurnitureBackend.Extensions
 {
     public static class SliderExtensions
     {
+        // Ánh xạ để tạo entity từ model
         public static Slider ToEntity(this SliderCreateVModel model)
         {
             return new Slider
             {
                 Title = model.Title,
                 Description = model.Description,
-                LinkUrl = model.LinkUrl,
-                StartDate = model.StartDate,
-                EndDate = model.EndDate,
+                LinkUrl = string.IsNullOrWhiteSpace(model.LinkUrl) ? "/" : model.LinkUrl.Trim(), // Sử dụng IsNullOrWhiteSpace và Trim
                 IsPoster = model.IsPoster,
-                Position = model.Position,
+                Position = string.IsNullOrWhiteSpace(model.Position) ? "Home Page" : model.Position.Trim(), // Sử dụng IsNullOrWhiteSpace và Trim
                 DisplayOrder = model.DisplayOrder,
                 IsActive = true,
                 ProductId = model.ProductId,
@@ -23,21 +22,21 @@ namespace TomsFurnitureBackend.Extensions
             };
         }
 
+        // Ánh xạ cập nhật thông tin slider
         public static void UpdateEntity(this Slider entity, SliderUpdateVModel model)
         {
             entity.Title = model.Title;
             entity.Description = model.Description;
-            entity.LinkUrl = model.LinkUrl;
-            entity.StartDate = model.StartDate;
-            entity.EndDate = model.EndDate;
+            entity.LinkUrl = string.IsNullOrWhiteSpace(model.LinkUrl) ? "/" : model.LinkUrl.Trim(); // Sử dụng IsNullOrWhiteSpace và Trim
             entity.IsPoster = model.IsPoster;
-            entity.Position = model.Position;
+            entity.Position = string.IsNullOrWhiteSpace(model.Position) ? "Home Page" : model.Position.Trim(); // Sử dụng IsNullOrWhiteSpace và Trim
             entity.DisplayOrder = model.DisplayOrder;
             entity.IsActive = model.IsActive;
             entity.ProductId = model.ProductId;
             entity.UpdatedDate = DateTime.UtcNow;
         }
 
+        // Ánh xạ lấy thông tin slider
         public static SliderGetVModel ToGetVModel(this Slider entity)
         {
             var model = new SliderGetVModel
@@ -46,8 +45,6 @@ namespace TomsFurnitureBackend.Extensions
                 Title = entity.Title,
                 Description = entity.Description,
                 LinkUrl = entity.LinkUrl,
-                StartDate = entity.StartDate,
-                EndDate = entity.EndDate,
                 IsPoster = entity.IsPoster,
                 Position = entity.Position,
                 DisplayOrder = entity.DisplayOrder,
