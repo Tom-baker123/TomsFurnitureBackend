@@ -384,6 +384,47 @@ namespace TomsFurnitureBackend.Services
 
             return product?.ToGetVModel();
         }
+        // Thêm phương thức GetVariantByIdAsync để lấy thông tin biến thể sản phẩm
+        public async Task<ProductVariantGetVModel?> GetVariantByIdAsync(int variantId)
+        {
+            try
+            {
+                // Tìm biến thể sản phẩm theo ID, bao gồm các thông tin liên quan
+                var variant = await _context.ProductVariants
+                    .Include(pv => pv.Color)
+                    .Include(pv => pv.Size)
+                    .Include(pv => pv.Material)
+                    .Include(pv => pv.Unit)
+                    .FirstOrDefaultAsync(pv => pv.Id == variantId);
+
+                if (variant == null)
+                {
+                    return null; // Không tìm thấy biến thể
+                }
+
+                // Chuyển đổi sang ProductVariantGetVModel
+                return new ProductVModel.ProductVariantGetVModel
+                {
+                    Id = variant.Id,
+                    OriginalPrice = variant.OriginalPrice,
+                    DiscountedPrice = variant.DiscountedPrice,
+                    StockQty = variant.StockQty,
+                    ColorId = variant.ColorId,
+                    ColorName = variant.Color?.ColorName,
+                    SizeId = variant.SizeId,
+                    SizeName = variant.Size?.SizeName,
+                    MaterialId = variant.MaterialId,
+                    MaterialName = variant.Material?.MaterialName,
+                    UnitId = variant.UnitId,
+                    UnitName = variant.Unit?.UnitName
+                };
+            }
+            catch (Exception ex)
+            {
+                // Ghi log lỗi
+                throw new Exception($"Error retrieving product variant with ID {variantId}: {ex.Message}", ex);
+            }
+        }
 
         // Cập nhật sản phẩm và các biến thể
         public async Task<ResponseResult> UpdateAsync(ProductUpdateVModel model)
@@ -509,6 +550,57 @@ namespace TomsFurnitureBackend.Services
             catch (Exception ex)
             {
                 return new ErrorResponseResult($"Error updating product variant: {ex.Message}");
+            }
+        }
+        // Thêm phương thức DeleteVariantAsync vào lớp ProductService
+        public async Task<ResponseResult> DeleteVariantAsync(int variantId)
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                // Tìm biến thể sản phẩm theo ID
+                var variant = await _context.ProductVariants
+                    .FirstOrDefaultAsync(pv => pv.Id == variantId);
+                if (variant == null)
+                {
+                    return new ErrorResponseResult($"Product variant with ID {variantId} not found.");
+                }
+
+                // Kiểm tra ràng buộc trong OrderDetails
+                var hasOrderDetails = await _context.OrderDetails
+                    .AnyAsync(od => od.ProVarId.HasValue && od.ProVarId.Value == variantId);
+                if (hasOrderDetails)
+                {
+                    return new ErrorResponseResult("Cannot delete product variant because it is used in orders.");
+                }
+
+                // Kiểm tra ràng buộc trong Cart
+                var hasCarts = await _context.Carts
+                    .AnyAsync(c => c.ProVarId == variantId);
+                if (hasCarts)
+                {
+                    return new ErrorResponseResult("Cannot delete product variant because it is referenced in the cart table.");
+                }
+
+                // Xóa biến thể
+                _context.ProductVariants.Remove(variant);
+                await _context.SaveChangesAsync();
+
+                // Commit transaction
+                await transaction.CommitAsync();
+
+                return new SuccessResponseResult(null, "Product variant deleted successfully.");
+            }
+            catch (DbUpdateException dbEx)
+            {
+                await transaction.RollbackAsync();
+                var errorMessage = dbEx.InnerException?.Message ?? dbEx.Message;
+                return new ErrorResponseResult($"Error deleting product variant: {errorMessage}");
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return new ErrorResponseResult($"Error deleting product variant: {ex.Message}");
             }
         }
     }

@@ -101,6 +101,31 @@ namespace TomsFurnitureBackend.Controllers
         }
 
         /// <summary>
+        /// Lấy thông tin biến thể sản phẩm theo ID
+        /// </summary>
+        /// <param name="variantId">ID của biến thể sản phẩm cần lấy</param>
+        /// <returns>Trả về thông tin biến thể sản phẩm hoặc lỗi nếu không tìm thấy</returns>
+        [HttpGet("variant/{variantId}")]
+        public async Task<ActionResult<ProductVModel.ProductVariantGetVModel>> GetVariantById(int variantId)
+        {
+            try
+            {
+                var result = await _productService.GetVariantByIdAsync(variantId);
+                if (result == null)
+                {
+                    _logger.LogWarning("Product variant with ID {variantId} not found.", variantId);
+                    return NotFound(new { Message = $"Product variant with ID {variantId} not found." });
+                }
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while retrieving product variant with ID {variantId}: {Error}", variantId, ex.Message);
+                return StatusCode(500, new { Message = "An error occurred while retrieving the product variant." });
+            }
+        }
+
+        /// <summary>
         /// Lấy danh sách tất cả sản phẩm
         /// </summary>
         /// <returns>Trả về danh sách sản phẩm</returns>
@@ -242,6 +267,33 @@ namespace TomsFurnitureBackend.Controllers
                 _logger.LogError(ex, "Error occurred while updating product variant with ID {id}: {Error}",
                     variantModel?.Id ?? 0, ex.Message);
                 return StatusCode(500, new { Message = "An error occurred while updating the product variant." });
+            }
+        }
+
+        /// <summary>
+        /// Xóa biến thể sản phẩm theo ID
+        /// </summary>
+        /// <param name="variantId">ID của biến thể sản phẩm cần xóa</param>
+        /// <returns>Trả về thông báo thành công hoặc lỗi</returns>
+        [HttpDelete("variant/{variantId}")]
+        public async Task<IActionResult> DeleteVariant(int variantId)
+        {
+            try
+            {
+                // Gọi service để xóa biến thể
+                var result = await _productService.DeleteVariantAsync(variantId);
+                if (!result.IsSuccess)
+                {
+                    _logger.LogWarning("Failed to delete product variant with ID {variantId}: {Message}", variantId, result.Message);
+                    return BadRequest(new { Message = result.Message });
+                }
+
+                return Ok(new { Message = result.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while deleting product variant with ID {variantId}: {Error}", variantId, ex.Message);
+                return StatusCode(500, new { Message = "An error occurred while deleting the product variant." });
             }
         }
     }
