@@ -332,35 +332,200 @@ namespace TomsFurnitureBackend.Services
         // Lấy tất cả sản phẩm
         public async Task<PaginationModel<ProductGetVModel>> GetAllAsync(ProductFilterParams param)
         {
-            var query = _context.Products
-                .Include(p => p.Brand)
-                .Include(p => p.Category)
-                .Include(p => p.Countries)
-                .Include(p => p.Supplier)
-                .Include(p => p.ProductVariants).ThenInclude(pv => pv.Color)
-                .Include(p => p.ProductVariants).ThenInclude(pv => pv.Size)
-                .Include(p => p.ProductVariants).ThenInclude(pv => pv.Material)
-                .Include(p => p.ProductVariants).ThenInclude(pv => pv.Unit)
-                .Include(p => p.Sliders.Where(s => s.IsActive == true))
-                .OrderBy(p => p.Id)
-                .AsQueryable();
-
-            var totalCount = await query.CountAsync();
-
-            var pagedData = await query
-                .Skip((param.PageNumber - 1) * param.PageSize)
-                .Take(param.PageSize)
-                .ToListAsync();
-
-            var result = new PaginationModel<ProductGetVModel>
+            try
             {
-                Items = pagedData.Select(ProductMapping.ToGetVModel).ToList(),
-                TotalCount = totalCount,
-                PageNumber = param.PageNumber,
-                PageSize = param.PageSize
-            };
+                var query = _context.Products
+                    .Include(p => p.Brand)
+                    .Include(p => p.Category)
+                    .Include(p => p.Countries)
+                    .Include(p => p.Supplier)
+                    .Include(p => p.ProductVariants).ThenInclude(pv => pv.Color)
+                    .Include(p => p.ProductVariants).ThenInclude(pv => pv.Size)
+                    .Include(p => p.ProductVariants).ThenInclude(pv => pv.Material)
+                    .Include(p => p.ProductVariants).ThenInclude(pv => pv.Unit)
+                    .Include(p => p.Sliders.Where(s => s.IsActive == true))
+                    .AsQueryable();
 
-            return result;
+                // Tìm kiếm theo tên sản phẩm
+                if (!string.IsNullOrWhiteSpace(param.ProductName))
+                {
+                    query = query.Where(p => p.ProductName.ToLower().Contains(param.ProductName.ToLower()));
+                }
+
+                // Tìm kiếm chung (giữ nguyên logic cũ)
+                if (!string.IsNullOrWhiteSpace(param.Search))
+                {
+                    query = query.Where(p => p.ProductName.ToLower().Contains(param.Search.ToLower()) || 
+                                             p.Category.CategoryName.ToLower().Contains(param.Search.ToLower()) ||
+                                             p.ProductVariants.Any(pv => pv.Color.ColorName.ToLower().Contains(param.Search.ToLower())));
+                }
+
+                // Lọc theo danh mục (dựa trên tên danh mục)
+                if (param.CategoryNames != null && param.CategoryNames.Any())
+                {
+                    var categoryIds = await _context.Categories
+                        .Where(c => param.CategoryNames.Contains(c.CategoryName))
+                        .Select(c => c.Id)
+                        .ToListAsync();
+                    if (categoryIds.Any())
+                    {
+                        query = query.Where(p => categoryIds.Contains(p.CategoryId.Value));
+                    }
+                    else
+                    {
+                        // Nếu không tìm thấy danh mục nào khớp, trả về rỗng
+                        query = query.Where(p => false);
+                    }
+                }
+
+                // Lọc theo thương hiệu (dựa trên tên thương hiệu)
+                if (param.BrandNames != null && param.BrandNames.Any())
+                {
+                    var brandIds = await _context.Brands
+                        .Where(b => param.BrandNames.Contains(b.BrandName))
+                        .Select(b => b.Id)
+                        .ToListAsync();
+                    if (brandIds.Any())
+                    {
+                        query = query.Where(p => brandIds.Contains(p.BrandId.Value));
+                    }
+                    else
+                    {
+                        query = query.Where(p => false);
+                    }
+                }
+
+                // Lọc theo xuất xứ (dựa trên tên quốc gia)
+                if (param.CountryNames != null && param.CountryNames.Any())
+                {
+                    var countryIds = await _context.Countries
+                        .Where(c => param.CountryNames.Contains(c.CountryName))
+                        .Select(c => c.Id)
+                        .ToListAsync();
+                    if (countryIds.Any())
+                    {
+                        query = query.Where(p => countryIds.Contains(p.CountriesId.Value));
+                    }
+                    else
+                    {
+                        query = query.Where(p => false);
+                    }
+                }
+
+                // Lọc theo màu sắc (dựa trên tên màu)
+                if (param.ColorNames != null && param.ColorNames.Any())
+                {
+                    var colorIds = await _context.Colors
+                        .Where(c => param.ColorNames.Contains(c.ColorName))
+                        .Select(c => c.Id)
+                        .ToListAsync();
+                    if (colorIds.Any())
+                    {
+                        query = query.Where(p => p.ProductVariants.Any(pv => colorIds.Contains(pv.ColorId)));
+                    }
+                    else
+                    {
+                        query = query.Where(p => false);
+                    }
+                }
+
+                // Lọc theo vật liệu (dựa trên tên vật liệu)
+                if (param.MaterialNames != null && param.MaterialNames.Any())
+                {
+                    var materialIds = await _context.Materials
+                        .Where(m => param.MaterialNames.Contains(m.MaterialName))
+                        .Select(m => m.Id)
+                        .ToListAsync();
+                    if (materialIds.Any())
+                    {
+                        query = query.Where(p => p.ProductVariants.Any(pv => materialIds.Contains(pv.MaterialId)));
+                    }
+                    else
+                    {
+                        query = query.Where(p => false);
+                    }
+                }
+
+                // Lọc theo kích thước (dựa trên tên kích thước)
+                if (param.SizeNames != null && param.SizeNames.Any())
+                {
+                    var sizeIds = await _context.Sizes
+                        .Where(s => param.SizeNames.Contains(s.SizeName))
+                        .Select(s => s.Id)
+                        .ToListAsync();
+                    if (sizeIds.Any())
+                    {
+                        query = query.Where(p => p.ProductVariants.Any(pv => sizeIds.Contains(pv.SizeId)));
+                    }
+                    else
+                    {
+                        query = query.Where(p => false);
+                    }
+                }
+
+                // Sắp xếp theo ID (giữ nguyên logic cũ)
+                // query = query.OrderBy(p => p.Id);
+
+                var sortBy = param.SortBy?.ToLower();
+                var sortOrder = param.SortOrder?.ToLower();
+                bool isDescending = sortOrder == "desc";
+
+                switch (sortBy)
+                {
+                    case "productname":
+                        query = isDescending
+                            ? query.OrderByDescending(p => p.ProductName)
+                            : query.OrderBy(p => p.ProductName);
+                        break;
+                    case "originalprice":
+                        query = isDescending
+                            ? query.OrderByDescending(p => p.ProductVariants.Any() ? p.ProductVariants.Min(pv => pv.OriginalPrice) : 0)
+                            : query.OrderBy(p => p.ProductVariants.Any() ? p.ProductVariants.Min(pv => pv.OriginalPrice) : 0);
+                        break;
+                    case "stockqty":
+                        query = isDescending
+                            ? query.OrderByDescending(p => p.ProductVariants.Any() ? p.ProductVariants.Sum(pv => pv.StockQty) : 0)
+                            : query.OrderBy(p => p.ProductVariants.Any() ? p.ProductVariants.Sum(pv => pv.StockQty) : 0);
+                        break;
+                    case "createddate":
+                        query = isDescending
+                            ? query.OrderByDescending(p => p.CreatedDate)
+                            : query.OrderBy(p => p.CreatedDate);
+                        break;
+                    case "updateddate":
+                        query = isDescending
+                            ? query.OrderByDescending(p => p.UpdatedDate)
+                            : query.OrderBy(p => p.UpdatedDate);
+                        break;
+                    default:
+                        // Mặc định sắp xếp theo ID tăng dần nếu SortBy không hợp lệ
+                        query = query.OrderBy(p => p.Id);
+                        break;
+                }
+
+                // Đếm tổng số bản ghi
+                var totalCount = await query.CountAsync();
+
+                // Phân trang
+                var pagedData = await query
+                    .Skip((param.PageNumber - 1) * param.PageSize)
+                    .Take(param.PageSize)
+                    .ToListAsync();
+
+                var result = new PaginationModel<ProductGetVModel>
+                {
+                    Items = pagedData.Select(ProductMapping.ToGetVModel).ToList(),
+                    TotalCount = totalCount,
+                    PageNumber = param.PageNumber,
+                    PageSize = param.PageSize
+                };
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error retrieving products: {ex.Message}", ex);
+            }
         }
 
         // Lấy sản phẩm theo ID

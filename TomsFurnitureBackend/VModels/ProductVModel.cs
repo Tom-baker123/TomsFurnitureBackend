@@ -7,7 +7,16 @@ namespace TomsFurnitureBackend.VModels
     {
         public class ProductFilterParams
         {
-            public string? search { get; set; }
+            public string? Search { get; set; } // Tìm kiếm chung (giữ nguyên)
+            public string? ProductName { get; set; } // Tìm kiếm theo tên sản phẩm
+            public List<string>? CategoryNames { get; set; } // Lọc theo danh sách tên danh mục
+            public List<string>? ColorNames { get; set; } // Lọc theo danh sách tên màu sắc
+            public List<string>? MaterialNames { get; set; } // Lọc theo danh sách tên vật liệu
+            public List<string>? SizeNames { get; set; } // Lọc theo danh sách tên kích thước
+            public List<string>? BrandNames { get; set; } // Lọc theo danh sách tên thương hiệu
+            public List<string>? CountryNames { get; set; } // Lọc theo danh sách tên xuất xứ
+            public string? SortBy { get; set; } // Trường sắp xếp (ProductName, OriginalPrice, StockQty, CreatedDate, UpdatedDate)
+            public string? SortOrder { get; set; } // Thứ tự sắp xếp (asc, desc)
             public int PageSize { get; set; } = Number.Pagination.DefaultPageSize;
             public int PageNumber { get; set; } = Number.Pagination.DefaultPageNumber;
         }
