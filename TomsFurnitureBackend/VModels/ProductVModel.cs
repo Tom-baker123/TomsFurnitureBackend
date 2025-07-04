@@ -19,6 +19,12 @@ namespace TomsFurnitureBackend.VModels
             public string? SortOrder { get; set; } // Thứ tự sắp xếp (asc, desc)
             public int PageSize { get; set; } = Number.Pagination.DefaultPageSize;
             public int PageNumber { get; set; } = Number.Pagination.DefaultPageNumber;
+            // Thêm thuộc tính MinPrice để lọc giá nhỏ nhất
+            public decimal? MinPrice { get; set; }
+            // Thêm thuộc tính MaxPrice để lọc giá lớn nhất
+            public decimal? MaxPrice { get; set; }
+            // Thêm thuộc tính InStock để lọc sản phẩm còn hàng (true) hoặc hết hàng (false)
+            public bool? InStock { get; set; }
         }
 
         public class ProductCreateVModel
