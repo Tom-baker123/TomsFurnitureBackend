@@ -355,7 +355,7 @@ namespace TomsFurnitureBackend.Services
                 // Tìm kiếm chung (giữ nguyên logic cũ)
                 if (!string.IsNullOrWhiteSpace(param.Search))
                 {
-                    query = query.Where(p => p.ProductName.ToLower().Contains(param.Search.ToLower()) || 
+                    query = query.Where(p => p.ProductName.ToLower().Contains(param.Search.ToLower()) ||
                                              p.Category.CategoryName.ToLower().Contains(param.Search.ToLower()) ||
                                              p.ProductVariants.Any(pv => pv.Color.ColorName.ToLower().Contains(param.Search.ToLower())));
                 }
@@ -463,9 +463,35 @@ namespace TomsFurnitureBackend.Services
                     }
                 }
 
-                // Sắp xếp theo ID (giữ nguyên logic cũ)
-                // query = query.OrderBy(p => p.Id);
+                // Lọc theo khoảng giá (MinPrice và MaxPrice)
+                if (param.MinPrice.HasValue || param.MaxPrice.HasValue)
+                {
+                    // Log giá trị để debug
+                    Console.WriteLine($"MinPrice: {param.MinPrice}, MaxPrice: {param.MaxPrice}");
+                    query = query.Where(p => p.ProductVariants.Any(pv =>
+                        (pv.DiscountedPrice ?? pv.OriginalPrice) >= (param.MinPrice ?? decimal.MinValue) &&
+                        (pv.DiscountedPrice ?? pv.OriginalPrice) <= (param.MaxPrice ?? decimal.MaxValue)));
+                }
 
+                // Lọc theo trạng thái tồn kho
+                // Nếu InStock được truyền (true/false), áp dụng điều điều kiện lọc tồn kho
+                if (param.InStock.HasValue)
+                {
+                    if (param.InStock.Value)
+                    {
+                        // Lọc sản phẩm có ít nhất một biến thể còn hàng (StockQty > 0)
+                        query = query.Where(p => p.ProductVariants.Any(pv => pv.StockQty > 0));
+                    }
+                    else
+                    {
+                        // Lọc sản phẩm có tất cả biến thể hết hàng (StockQty == 0)
+                        query = query.Where(p => p.ProductVariants.All(pv => pv.StockQty == 0));
+                    }
+                }
+                // Nếu InStock là null, không áp dụng bất kỳ điều kiện lọc tồn kho nào
+                // Logic này cho phép trả về tất cả sản phẩm (còn hàng và hết hàng) để hỗ trợ hiển thị trên trang admin
+
+                // Sắp xếp theo ID (giữ nguyên logic cũ)
                 var sortBy = param.SortBy?.ToLower();
                 var sortOrder = param.SortOrder?.ToLower();
                 bool isDescending = sortOrder == "desc";
