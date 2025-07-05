@@ -137,6 +137,7 @@ namespace TomsFurnitureBackend.Extensions
                     StockQty = pv.StockQty,
                     ColorId = pv.ColorId,
                     ColorName = pv.Color?.ColorName,
+                    ColorCode = pv.Color?.ColorCode,
                     SizeId = pv.SizeId,
                     SizeName = pv.Size?.SizeName,
                     MaterialId = pv.MaterialId,
