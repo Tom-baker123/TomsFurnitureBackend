@@ -575,6 +575,7 @@ namespace TomsFurnitureBackend.Services
 
             return product?.ToGetVModel();
         }
+        
         // Thêm phương thức GetVariantByIdAsync để lấy thông tin biến thể sản phẩm
         public async Task<ProductVariantGetVModel?> GetVariantByIdAsync(int variantId)
         {
@@ -614,6 +615,90 @@ namespace TomsFurnitureBackend.Services
             {
                 // Ghi log lỗi
                 throw new Exception($"Error retrieving product variant with ID {variantId}: {ex.Message}", ex);
+            }
+        }
+
+        // Lấy biến thể sản phẩm theo thuộc tính
+        // Triển khai phương thức kiểm tra biến thể theo mã/tên sản phẩm và thuộc tính
+        public async Task<ResponseResult> GetVariantIdByAttributesAsync(string productIdentifier, int colorId, int sizeId, int materialId)
+        {
+            try
+            {
+                // Bước 1: Kiểm tra tham số đầu vào
+                if (string.IsNullOrWhiteSpace(productIdentifier))
+                {
+                    return new ErrorResponseResult("Product identifier (ID or name) is required.");
+                }
+                if (colorId <= 0)
+                {
+                    return new ErrorResponseResult("Valid Color ID is required.");
+                }
+                if (sizeId <= 0)
+                {
+                    return new ErrorResponseResult("Valid Size ID is required.");
+                }
+                if (materialId <= 0)
+                {
+                    return new ErrorResponseResult("Valid Material ID is required.");
+                }
+
+                // Bước 2: Kiểm tra sự tồn tại của các thuộc tính
+                if (!await _context.Colors.AnyAsync(c => c.Id == colorId))
+                {
+                    return new ErrorResponseResult($"Color with ID {colorId} does not exist.");
+                }
+                if (!await _context.Sizes.AnyAsync(s => s.Id == sizeId))
+                {
+                    return new ErrorResponseResult($"Size with ID {sizeId} does not exist.");
+                }
+                if (!await _context.Materials.AnyAsync(m => m.Id == materialId))
+                {
+                    return new ErrorResponseResult($"Material with ID {materialId} does not exist.");
+                }
+
+                // Bước 3: Tìm sản phẩm theo mã (ID) hoặc tên
+                Product? product = null;
+                if (int.TryParse(productIdentifier, out int productId))
+                {
+                    // Nếu productIdentifier là số, tìm theo ID
+                    product = await _context.Products
+                        .Include(p => p.ProductVariants)
+                        .FirstOrDefaultAsync(p => p.Id == productId);
+                }
+                else
+                {
+                    // Nếu productIdentifier là chuỗi, tìm theo tên
+                    product = await _context.Products
+                        .Include(p => p.ProductVariants)
+                        .FirstOrDefaultAsync(p => p.ProductName.ToLower() == productIdentifier.ToLower());
+                }
+
+                if (product == null)
+                {
+                    return new ErrorResponseResult($"Product with identifier '{productIdentifier}' not found.");
+                }
+
+                // Bước 4: Tìm biến thể phù hợp với các thuộc tính
+                var variant = await _context.ProductVariants
+                    .FirstOrDefaultAsync(pv =>
+                        pv.ProductId == product.Id &&
+                        pv.ColorId == colorId &&
+                        pv.SizeId == sizeId &&
+                        pv.MaterialId == materialId &&
+                        pv.IsActive == true);
+
+                if (variant == null)
+                {
+                    return new ErrorResponseResult("No active product variant found with the specified attributes.");
+                }
+
+                // Bước 5: Trả về ID của biến thể
+                return new SuccessResponseResult(variant.Id, "Product variant found successfully.");
+            }
+            catch (Exception ex)
+            {
+                // Bước 6: Xử lý lỗi và trả về thông báo
+                return new ErrorResponseResult($"Error retrieving product variant: {ex.Message}");
             }
         }
 
