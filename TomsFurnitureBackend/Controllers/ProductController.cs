@@ -126,6 +126,77 @@ namespace TomsFurnitureBackend.Controllers
         }
 
         /// <summary>
+        /// Kiểm tra biến thể sản phẩm theo mã/tên sản phẩm và thuộc tính (màu sắc, kích thước, vật liệu)
+        /// </summary>
+        /// <param name="productIdentifier">Mã (ID) hoặc tên sản phẩm</param>
+        /// <param name="colorId">ID của màu sắc</param>
+        /// <param name="sizeId">ID của kích thước</param>
+        /// <param name="materialId">ID của vật liệu</param>
+        /// <returns>Trả về ID của biến thể hoặc thông báo lỗi</returns>
+        [HttpGet("variant/check")]
+        public async Task<IActionResult> GetVariantIdByAttributes(
+            [FromQuery] string productIdentifier,
+            [FromQuery] int colorId,
+            [FromQuery] int sizeId,
+            [FromQuery] int materialId)
+        {
+            try
+            {
+                // Bước 1: Kiểm tra tính hợp lệ của dữ liệu đầu vào
+                if (string.IsNullOrWhiteSpace(productIdentifier))
+                {
+                    _logger.LogWarning("Invalid or missing product identifier in GET /api/Product/variant/check.");
+                    return BadRequest(new { Message = "Product identifier is required." });
+                }
+                if (colorId <= 0)
+                {
+                    _logger.LogWarning("Invalid color ID in GET /api/Product/variant/check: {colorId}", colorId);
+                    return BadRequest(new { Message = "Valid Color ID is required." });
+                }
+                if (sizeId <= 0)
+                {
+                    _logger.LogWarning("Invalid size ID in GET /api/Product/variant/check: {sizeId}", sizeId);
+                    return BadRequest(new { Message = "Valid Size ID is required." });
+                }
+                if (materialId <= 0)
+                {
+                    _logger.LogWarning("Invalid material ID in GET /api/Product/variant/check: {materialId}", materialId);
+                    return BadRequest(new { Message = "Valid Material ID is required." });
+                }
+
+                // Bước 2: Gọi service để kiểm tra biến thể
+                var result = await _productService.GetVariantIdByAttributesAsync(productIdentifier, colorId, sizeId, materialId);
+                if (!result.IsSuccess)
+                {
+                    _logger.LogWarning("Failed to retrieve variant ID for product identifier {productIdentifier}: {Message}", productIdentifier, result.Message);
+                    return BadRequest(new { Message = result.Message });
+                }
+
+                // Bước 3: Kiểm tra dữ liệu trả về từ service
+                var successResult = result as SuccessResponseResult;
+                if (successResult == null || successResult.Data == null)
+                {
+                    _logger.LogWarning("Unexpected null data when retrieving variant ID for product identifier {productIdentifier}", productIdentifier);
+                    return StatusCode(500, new { Message = "Unexpected error occurred while retrieving the product variant ID." });
+                }
+
+                // Bước 4: Trả về kết quả thành công với ID biến thể
+                return Ok(new
+                {
+                    Message = result.Message,
+                    Success = true,
+                    VariantId = successResult?.Data
+                });
+            }
+            catch (Exception ex)
+            {
+                // Bước 5: Ghi log lỗi và trả về thông báo lỗi
+                _logger.LogError(ex, "Error occurred while retrieving variant ID for product identifier {productIdentifier}: {Error}", productIdentifier, ex.Message);
+                return StatusCode(500, new { Message = "An error occurred while retrieving the product variant ID." });
+            }
+        }
+
+        /// <summary>
         /// Lấy danh sách tất cả sản phẩm
         /// </summary>
         /// <returns>Trả về danh sách sản phẩm</returns>

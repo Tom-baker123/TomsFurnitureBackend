@@ -11,6 +11,7 @@ namespace TomsFurnitureBackend.Services.IServices
         Task<PaginationModel<ProductGetVModel>> GetAllAsync(ProductFilterParams param); // Lấy tất cả sản phẩm
         Task<ProductGetVModel?> GetByIdAsync(int id); // Lấy sản phẩm theo ID
         Task<ProductVariantGetVModel?> GetVariantByIdAsync(int variantId); // Lấy biến thể sản phẩm theo ID
+        Task<ResponseResult> GetVariantIdByAttributesAsync(string productIdentifier, int colorId, int sizeId, int materialId); // Lấy biến thể sản phẩm theo thuộc tính
         Task<ResponseResult> CreateAsync(ProductCreateVModel model); // Tạo sản phẩm mới
         Task<ResponseResult> UpdateAsync(ProductUpdateVModel model); // Cập nhật sản phẩm
         Task<ResponseResult> DeleteAsync(int id); // Xóa sản phẩm
