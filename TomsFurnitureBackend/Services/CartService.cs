@@ -282,13 +282,17 @@ namespace TomsFurnitureBackend.Services
             }
         }
 
-        // Hợp nhất giỏ hàng từ cookies
-        public async Task<ResponseResult> MergeCartFromCookiesAsync(HttpContext httpContext)
+        // Hợp nhất giỏ hàng từ cookies (overload nhận userId)
+        public async Task<ResponseResult> MergeCartFromCookiesAsync(HttpContext httpContext, int? userId)
         {
             try
             {
-                var userId = await GetCurrentUserIdAsync(httpContext);
-                if (!userId.HasValue)
+                int? actualUserId = userId;
+                if (!actualUserId.HasValue)
+                {
+                    actualUserId = await GetCurrentUserIdAsync(httpContext);
+                }
+                if (!actualUserId.HasValue)
                 {
                     // User chưa đăng nhập
                     return new ErrorResponseResult("User is not logged in.");
@@ -311,16 +315,16 @@ namespace TomsFurnitureBackend.Services
                     }
 
                     var existingCartItem = await _context.Carts
-                        .FirstOrDefaultAsync(c => c.UserId == userId && c.ProVarId == item.ProVarId && c.IsActive == true);
+                        .FirstOrDefaultAsync(c => c.UserId == actualUserId && c.ProVarId == item.ProVarId && c.IsActive == true);
                     if (existingCartItem != null)
                     {
                         existingCartItem.Quantity += item.Quantity;
                         existingCartItem.UpdatedDate = DateTime.UtcNow;
-                        existingCartItem.UpdatedBy = userId.ToString();
+                        existingCartItem.UpdatedBy = actualUserId.ToString();
                     }
                     else
                     {
-                        var cartEntity = CartMapping.ToEntity(item, userId); // Sử dụng CartMapping
+                        var cartEntity = CartMapping.ToEntity(item, actualUserId); // Sử dụng CartMapping
                         _context.Carts.Add(cartEntity);
                     }
                 }
@@ -337,6 +341,12 @@ namespace TomsFurnitureBackend.Services
                 // Lỗi khi hợp nhất giỏ hàng
                 return new ErrorResponseResult($"Error merging cart: {ex.Message}");
             }
+        }
+
+        // Hợp nhất giỏ hàng từ cookies (giữ nguyên cho các chỗ gọi cũ)
+        public async Task<ResponseResult> MergeCartFromCookiesAsync(HttpContext httpContext)
+        {
+            return await MergeCartFromCookiesAsync(httpContext, null);
         }
     }
 }

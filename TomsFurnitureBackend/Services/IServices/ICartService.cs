@@ -12,5 +12,6 @@ namespace TomsFurnitureBackend.Services.IServices
         Task<ResponseResult> RemoveFromCartAsync(int id, HttpContext httpContext);
         Task<List<CartGetVModel>> GetCartAsync(HttpContext httpContext);
         Task<ResponseResult> MergeCartFromCookiesAsync(HttpContext httpContext);
+        Task<ResponseResult> MergeCartFromCookiesAsync(HttpContext httpContext, int? userId);
     }
 }
