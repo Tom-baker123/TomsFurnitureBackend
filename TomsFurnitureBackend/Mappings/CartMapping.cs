@@ -1,6 +1,7 @@
 ﻿using TomsFurnitureBackend.Models;
 using TomsFurnitureBackend.VModels;
 using static TomsFurnitureBackend.VModels.CartVModel;
+using static TomsFurnitureBackend.VModels.ProductVModel;
 
 namespace TomsFurnitureBackend.Extensions
 {
@@ -29,7 +30,7 @@ namespace TomsFurnitureBackend.Extensions
             entity.UpdatedBy = entity.UserId?.ToString() ?? "Guest";
         }
 
-        // Chuyển từ Cart entity sang CartGetVModel, lấy ProductName từ ProductVariant
+        // Chuyển từ Cart entity sang CartGetVModel, lấy ProductName và thông tin biến thể từ ProductVariant
         public static CartGetVModel ToGetVModel(this Cart entity)
         {
             return new CartGetVModel
@@ -43,7 +44,23 @@ namespace TomsFurnitureBackend.Extensions
                 UpdatedBy = entity.UpdatedBy,
                 UserId = entity.UserId,
                 ProVarId = entity.ProVarId,
-                ProductName = entity.ProVar?.Product?.ProductName
+                ProductName = entity.ProVar?.Product?.ProductName,
+                ProductVariant = entity.ProVar == null ? null : new ProductVariantGetVModel
+                {
+                    Id = entity.ProVar.Id,
+                    OriginalPrice = entity.ProVar.OriginalPrice,
+                    DiscountedPrice = entity.ProVar.DiscountedPrice,
+                    StockQty = entity.ProVar.StockQty,
+                    ColorId = entity.ProVar.ColorId,
+                    ColorName = entity.ProVar.Color?.ColorName,
+                    ColorCode = entity.ProVar.Color?.ColorCode,
+                    SizeId = entity.ProVar.SizeId,
+                    SizeName = entity.ProVar.Size?.SizeName,
+                    MaterialId = entity.ProVar.MaterialId,
+                    MaterialName = entity.ProVar.Material?.MaterialName,
+                    UnitId = entity.ProVar.UnitId,
+                    UnitName = entity.ProVar.Unit?.UnitName
+                }
             };
         }
     }
