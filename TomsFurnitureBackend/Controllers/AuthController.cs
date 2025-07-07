@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using OA.Domain.Common.Models;
 using TomsFurnitureBackend.Services.Interfaces;
+using TomsFurnitureBackend.Services.IServices;
 using TomsFurnitureBackend.VModels;
 
 namespace TomsFurnitureBackend.Controllers
@@ -12,12 +13,14 @@ namespace TomsFurnitureBackend.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
+        private readonly ICartService _cartService;
         private readonly ILogger<AuthController> _logger;
 
-        public AuthController(IAuthService authService, ILogger<AuthController> logger)
+        public AuthController(IAuthService authService, ICartService cartService, ILogger<AuthController> logger)
         {
             // Bước 1: Khởi tạo các dependency
             _authService = authService ?? throw new ArgumentNullException(nameof(authService));
+            _cartService = cartService ?? throw new ArgumentNullException(nameof(cartService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -115,9 +118,11 @@ namespace TomsFurnitureBackend.Controllers
                     return BadRequest(new { Message = "No user data returned from login." });
                 }
                 var userData = (LoginResultVModel)successResult.Data;
-                // Bước 6: Ghi log đăng nhập thành công
+                // Bước 6: Tự động hợp nhất giỏ hàng từ cookie
+                await _cartService.MergeCartFromCookiesAsync(HttpContext, userData.Id);
+                // Bước 7: Ghi log đăng nhập thành công
                 _logger.LogInformation("Login successful for {Email}, Role: {Role}", model.Email, userData.Role);
-                // Bước 7: Trả về phản hồi thành công
+                // Bước 8: Trả về phản hồi thành công
                 return Ok(new
                 {
                     Message = successResult.Message,
@@ -128,7 +133,7 @@ namespace TomsFurnitureBackend.Controllers
             }
             catch (Exception ex)
             {
-                // Bước 8: Ghi log và trả về lỗi nếu có
+                // Bước 9: Ghi log và trả về lỗi nếu có
                 _logger.LogError(ex, "Error during login for {Email}.", model?.Email ?? "unknown");
                 return StatusCode(500, new { Message = "An error occurred during login.", Error = ex.Message });
             }

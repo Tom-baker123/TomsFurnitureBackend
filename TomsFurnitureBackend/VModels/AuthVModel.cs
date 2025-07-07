@@ -65,6 +65,7 @@
     // ViewModel để định nghĩa kết quả đăng nhập
     public class LoginResultVModel
     {
+        public int Id { get; set; } // Thêm userId
         public string UserName { get; set; } = null!;
         public string Role { get; set; } = null!;
     }

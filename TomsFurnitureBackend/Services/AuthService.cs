@@ -241,6 +241,7 @@ namespace TomsFurnitureBackend.Services
                 return new SuccessResponseResult(
                     new LoginResultVModel
                     {
+                        Id = user.Id, // Trả về userId
                         UserName = user.UserName,
                         Role = user.Role.RoleName
                     },
