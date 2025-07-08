@@ -12,6 +12,7 @@ using TomsFurnitureBackend.Services.Interfaces;
 using TomsFurnitureBackend.Services.IServices;
 using TomsFurnitureBackend.VModels;
 using static TomsFurnitureBackend.VModels.CartVModel;
+using Microsoft.AspNetCore.Http;
 
 namespace TomsFurnitureBackend.Services
 {
@@ -20,12 +21,14 @@ namespace TomsFurnitureBackend.Services
         private readonly TomfurnitureContext _context;
         private readonly IAuthService _authService;
         private readonly ILogger<CartService> _logger;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public CartService(TomfurnitureContext context, IAuthService authService, ILogger<CartService> logger)
+        public CartService(TomfurnitureContext context, IAuthService authService, ILogger<CartService> logger, IHttpContextAccessor httpContextAccessor)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
             _authService = authService ?? throw new ArgumentNullException(nameof(authService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _httpContextAccessor = httpContextAccessor;
         }
 
         private async Task<int?> GetCurrentUserIdAsync(HttpContext httpContext)
@@ -67,7 +70,7 @@ namespace TomsFurnitureBackend.Services
             {
                 HttpOnly = true,
                 Secure = true,
-                SameSite = SameSiteMode.Strict,
+                SameSite = SameSiteMode.None,
                 Expires = DateTimeOffset.UtcNow.AddDays(7)
             };
             httpContext.Response.Cookies.Append("GuestCart", cartJson, cookieOptions);
@@ -222,7 +225,8 @@ namespace TomsFurnitureBackend.Services
                 else
                 {
                     var cartItems = GetCartFromCookies(httpContext);
-                    var existingItem = cartItems.FirstOrDefault(c => c.ProVarId == id);
+                    // Sử dụng so sánh kiểu an toàn để tìm đúng item cần xóa
+                    var existingItem = cartItems.FirstOrDefault(c => c.ProVarId.Equals(id));
                     if (existingItem == null)
                     {
                         // Không tìm thấy mục giỏ hàng (cookie)
@@ -264,6 +268,8 @@ namespace TomsFurnitureBackend.Services
             }
             else
             {
+                //var cartCookie = _httpContextAccessor.HttpContext?.Request.Cookies["GuestCart"];
+                //_logger.LogInformation("Cookie GuestCart received: {Cookie}", cartCookie ?? "null");
                 var cartItems = GetCartFromCookies(httpContext);
                 var productVarIds = cartItems.Select(c => c.ProVarId).ToList();
                 var productVariants = await _context.ProductVariants
