@@ -343,6 +343,7 @@ namespace TomsFurnitureBackend.Services
                     .Include(p => p.ProductVariants).ThenInclude(pv => pv.Size)
                     .Include(p => p.ProductVariants).ThenInclude(pv => pv.Material)
                     .Include(p => p.ProductVariants).ThenInclude(pv => pv.Unit)
+                    .Include(p => p.ProductVariants).ThenInclude(pv => pv.ProductVariantImages)
                     .Include(p => p.Sliders.Where(s => s.IsActive == true))
                     .AsQueryable();
 
@@ -570,6 +571,8 @@ namespace TomsFurnitureBackend.Services
                     .ThenInclude(pv => pv.Material)
                 .Include(p => p.ProductVariants)
                     .ThenInclude(pv => pv.Unit)
+                .Include(p => p.ProductVariants)
+                    .ThenInclude(pv => pv.ProductVariantImages)
                 .Include(p => p.Sliders.Where(s => s.IsActive == true))
                 .FirstOrDefaultAsync(p => p.Id == id);
 

@@ -43,6 +43,8 @@ public partial class ProductVariant
 
     public virtual Product Product { get; set; } = null!;
 
+    public virtual ICollection<ProductVariantImage> ProductVariantImages { get; set; } = new List<ProductVariantImage>();
+
     public virtual Size Size { get; set; } = null!;
 
     public virtual Unit Unit { get; set; } = null!;
