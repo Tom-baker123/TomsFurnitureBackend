@@ -262,6 +262,8 @@ namespace TomsFurnitureBackend.Services
                         .ThenInclude(pv => pv.Material)
                     .Include(c => c.ProVar)
                         .ThenInclude(pv => pv.Unit)
+                    .Include(c => c.ProVar)
+                        .ThenInclude(pv => pv.ProductVariantImages)
                     .Where(c => c.UserId == userId && c.IsActive == true)
                     .ToListAsync();
                 return cartItems.Select(c => CartMapping.ToGetVModel(c)).ToList();
@@ -278,6 +280,7 @@ namespace TomsFurnitureBackend.Services
                     .Include(pv => pv.Size)
                     .Include(pv => pv.Material)
                     .Include(pv => pv.Unit)
+                    .Include(pv => pv.ProductVariantImages)
                     .Where(pv => productVarIds.Contains(pv.Id))
                     .ToListAsync();
                 return cartItems.Select(c => {

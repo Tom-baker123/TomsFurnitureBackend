@@ -101,6 +101,30 @@ namespace TomsFurnitureBackend.VModels
             public string? MaterialName { get; set; }
             public int UnitId { get; set; }
             public string? UnitName { get; set; }
+            // Bổ sung danh sách ảnh biến thể
+            public List<ProductVariantImageGetVModel> Images { get; set; } = new List<ProductVariantImageGetVModel>();
+        }
+
+        public class ProductVariantImageCreateVModel
+        {
+            public string? Attribute { get; set; }
+            public int? DisplayOrder { get; set; }
+            public int? ProVarId { get; set; }
+        }
+
+        public class ProductVariantImageUpdateVModel : ProductVariantImageCreateVModel
+        {
+            public int Id { get; set; }
+            public bool? IsActive { get; set; }
+        }
+
+        public class ProductVariantImageGetVModel : ProductVariantImageUpdateVModel
+        {
+            public string? ImageUrl { get; set; }
+            public DateTime? CreatedDate { get; set; }
+            public DateTime? UpdatedDate { get; set; }
+            public string? CreatedBy { get; set; }
+            public string? UpdatedBy { get; set; }
         }
     }
 }

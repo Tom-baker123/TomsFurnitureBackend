@@ -57,6 +57,8 @@ public partial class TomfurnitureContext : DbContext
 
     public virtual DbSet<ProductVariant> ProductVariants { get; set; }
 
+    public virtual DbSet<ProductVariantImage> ProductVariantImages { get; set; }
+
     public virtual DbSet<Promotion> Promotions { get; set; }
 
     public virtual DbSet<PromotionType> PromotionTypes { get; set; }
@@ -541,6 +543,26 @@ public partial class TomfurnitureContext : DbContext
                 .HasForeignKey(d => d.UnitId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__ProductVa__UnitI__619B8048");
+        });
+
+        modelBuilder.Entity<ProductVariantImage>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__ProductV__3214EC07AD0FFC0B");
+
+            entity.Property(e => e.Attribute).HasMaxLength(255);
+            entity.Property(e => e.CreatedBy).HasMaxLength(255);
+            entity.Property(e => e.CreatedDate).HasColumnType("datetime");
+            entity.Property(e => e.DisplayOrder).HasDefaultValue(0);
+            entity.Property(e => e.ImageUrl)
+                .HasMaxLength(255)
+                .HasColumnName("ImageURL");
+            entity.Property(e => e.ProVarId).HasColumnName("ProVarID");
+            entity.Property(e => e.UpdatedBy).HasMaxLength(255);
+            entity.Property(e => e.UpdatedDate).HasColumnType("datetime");
+
+            entity.HasOne(d => d.ProVar).WithMany(p => p.ProductVariantImages)
+                .HasForeignKey(d => d.ProVarId)
+                .HasConstraintName("FK__ProductVa__ProVa__1C873BEC");
         });
 
         modelBuilder.Entity<Promotion>(entity =>

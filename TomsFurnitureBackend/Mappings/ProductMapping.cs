@@ -143,7 +143,20 @@ namespace TomsFurnitureBackend.Extensions
                     MaterialId = pv.MaterialId,
                     MaterialName = pv.Material?.MaterialName,
                     UnitId = pv.UnitId,
-                    UnitName = pv.Unit?.UnitName
+                    UnitName = pv.Unit?.UnitName,
+                    Images = pv.ProductVariantImages?.Select(img => new ProductVModel.ProductVariantImageGetVModel
+                    {
+                        Id = img.Id,
+                        ImageUrl = img.ImageUrl,
+                        Attribute = img.Attribute,
+                        DisplayOrder = img.DisplayOrder,
+                        IsActive = img.IsActive,
+                        CreatedDate = img.CreatedDate,
+                        UpdatedDate = img.UpdatedDate,
+                        CreatedBy = img.CreatedBy,
+                        UpdatedBy = img.UpdatedBy,
+                        ProVarId = img.ProVarId
+                    }).ToList() ?? new List<ProductVModel.ProductVariantImageGetVModel>()
                 }).ToList() ?? new List<ProductVModel.ProductVariantGetVModel>(),
                 Sliders = entity.Sliders?.Where(s => s.IsActive == true).Select(s => new SliderGetVModel
                 {

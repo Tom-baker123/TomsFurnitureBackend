@@ -59,7 +59,20 @@ namespace TomsFurnitureBackend.Extensions
                     MaterialId = entity.ProVar.MaterialId,
                     MaterialName = entity.ProVar.Material?.MaterialName,
                     UnitId = entity.ProVar.UnitId,
-                    UnitName = entity.ProVar.Unit?.UnitName
+                    UnitName = entity.ProVar.Unit?.UnitName,
+                    Images = entity.ProVar.ProductVariantImages?.Select(img => new ProductVariantImageGetVModel
+                    {
+                        Id = img.Id,
+                        ImageUrl = img.ImageUrl,
+                        Attribute = img.Attribute,
+                        DisplayOrder = img.DisplayOrder,
+                        IsActive = img.IsActive,
+                        CreatedDate = img.CreatedDate,
+                        UpdatedDate = img.UpdatedDate,
+                        CreatedBy = img.CreatedBy,
+                        UpdatedBy = img.UpdatedBy,
+                        ProVarId = img.ProVarId
+                    }).ToList() ?? new List<ProductVariantImageGetVModel>()
                 }
             };
         }
