@@ -56,12 +56,17 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
 // 4. Cloudinary
 var cloudinarySettings = builder.Configuration.GetSection("CloudinarySettings").Get<CloudinarySettings>();
+if (cloudinarySettings == null)
+{
+    throw new InvalidOperationException("Cloudinary settings are not configured properly.");
+}
 builder.Services.AddSingleton(new Cloudinary(new Account(
-    cloudinarySettings.CloudName,
-    cloudinarySettings.ApiKey,
-    cloudinarySettings.ApiSecret
+    cloudinarySettings.CloudName ?? throw new InvalidOperationException("CloudName is not configured."),
+    cloudinarySettings.ApiKey ?? throw new InvalidOperationException("ApiKey is not configured."),
+    cloudinarySettings.ApiSecret ?? throw new InvalidOperationException("ApiSecret is not configured.")
 )));
 
 // 5. Cookie Authentication

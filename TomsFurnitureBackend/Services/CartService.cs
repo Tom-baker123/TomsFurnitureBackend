@@ -106,16 +106,19 @@ namespace TomsFurnitureBackend.Services
                 var userId = await GetCurrentUserIdAsync(httpContext);
                 if (userId.HasValue)
                 {
+                    // Kiểm tra bản ghi đã tồn tại chưa
                     var existingCartItem = await _context.Carts
                         .FirstOrDefaultAsync(c => c.UserId == userId && c.ProVarId == model.ProVarId && c.IsActive == true);
                     if (existingCartItem != null)
                     {
+                        // Nếu đã tồn tại thì cập nhật số lượng
                         existingCartItem.Quantity += model.Quantity;
                         existingCartItem.UpdatedDate = DateTime.UtcNow;
                         existingCartItem.UpdatedBy = userId.ToString();
                     }
                     else
                     {
+                        // Nếu chưa tồn tại thì thêm mới
                         var cartEntity = CartMapping.ToEntity(model, userId); // Sử dụng CartMapping
                         _context.Carts.Add(cartEntity);
                     }
@@ -214,9 +217,8 @@ namespace TomsFurnitureBackend.Services
                         // Không tìm thấy mục giỏ hàng
                         return new ErrorResponseResult($"Cart item with ID {id} not found.");
                     }
-                    cartItem.IsActive = false;
-                    cartItem.UpdatedDate = DateTime.UtcNow;
-                    cartItem.UpdatedBy = userId.ToString();
+                    // Hard delete: Remove the cart item from the database
+                    _context.Carts.Remove(cartItem);
                     await _context.SaveChangesAsync();
                     var cart = await GetCartAsync(httpContext);
                     // Xóa thành công khỏi giỏ hàng
@@ -296,30 +298,34 @@ namespace TomsFurnitureBackend.Services
         {
             try
             {
+                _logger.LogInformation("[MERGE] Bắt đầu merge cart từ cookie cho userId: {UserId}", userId);
                 int? actualUserId = userId;
                 if (!actualUserId.HasValue)
                 {
                     actualUserId = await GetCurrentUserIdAsync(httpContext);
+                    _logger.LogInformation("[MERGE] Lấy userId từ context: {UserId}", actualUserId);
                 }
                 if (!actualUserId.HasValue)
                 {
-                    // User chưa đăng nhập
+                    _logger.LogWarning("[MERGE] User chưa đăng nhập, không thể merge cart.");
                     return new ErrorResponseResult("User is not logged in.");
                 }
 
                 var cartItems = GetCartFromCookies(httpContext);
+                _logger.LogInformation("[MERGE] Đọc được {Count} item từ GuestCart cookie: {Content}", cartItems.Count, JsonConvert.SerializeObject(cartItems));
                 if (!cartItems.Any())
                 {
-                    // Không có mục nào trong cookie để hợp nhất
+                    _logger.LogInformation("[MERGE] Không có mục nào trong cookie để hợp nhất.");
                     return new SuccessResponseResult(null, "No cart items in cookies to merge.");
                 }
 
                 foreach (var item in cartItems)
                 {
+                    _logger.LogInformation("[MERGE] Đang xử lý item: ProVarId={ProVarId}, Quantity={Quantity}", item.ProVarId, item.Quantity);
                     var validationResult = await ValidateCartItemAsync(item);
                     if (validationResult != null)
                     {
-                        // Bỏ qua các mục không hợp lệ
+                        _logger.LogWarning("[MERGE] Item không hợp lệ, bỏ qua: ProVarId={ProVarId}, Lý do: {Message}", item.ProVarId, validationResult.Message);
                         continue;
                     }
 
@@ -327,26 +333,38 @@ namespace TomsFurnitureBackend.Services
                         .FirstOrDefaultAsync(c => c.UserId == actualUserId && c.ProVarId == item.ProVarId && c.IsActive == true);
                     if (existingCartItem != null)
                     {
+                        _logger.LogInformation("[MERGE] Đã có item trong DB, cộng thêm số lượng: ProVarId={ProVarId}, OldQuantity={OldQuantity}, Add={Add}", item.ProVarId, existingCartItem.Quantity, item.Quantity);
                         existingCartItem.Quantity += item.Quantity;
                         existingCartItem.UpdatedDate = DateTime.UtcNow;
                         existingCartItem.UpdatedBy = actualUserId.ToString();
                     }
                     else
                     {
+                        _logger.LogInformation("[MERGE] Thêm mới item vào DB: ProVarId={ProVarId}, Quantity={Quantity}", item.ProVarId, item.Quantity);
                         var cartEntity = CartMapping.ToEntity(item, actualUserId); // Sử dụng CartMapping
                         _context.Carts.Add(cartEntity);
                     }
                 }
 
                 await _context.SaveChangesAsync();
-                httpContext.Response.Cookies.Delete("GuestCart");
+                _logger.LogInformation("[MERGE] Đã lưu thay đổi vào DB.");
+
+                httpContext.Response.Cookies.Delete("GuestCart", new CookieOptions
+                {
+                    Path = "/",
+                    Secure = true,
+                    SameSite = SameSiteMode.None,
+                    HttpOnly = true
+                });
+                _logger.LogInformation("[MERGE] Đã xóa GuestCart cookie sau khi merge.");
+
                 var cart = await GetCartAsync(httpContext);
-                // Hợp nhất giỏ hàng thành công
+                _logger.LogInformation("[MERGE] Merge cart thành công cho userId: {UserId}", actualUserId);
                 return new SuccessResponseResult(cart, "Cart merged successfully.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error merging cart from cookies: {Error}", ex.Message);
+                _logger.LogError(ex, "[MERGE] Error merging cart from cookies: {Error}", ex.Message);
                 // Lỗi khi hợp nhất giỏ hàng
                 return new ErrorResponseResult($"Error merging cart: {ex.Message}");
             }
