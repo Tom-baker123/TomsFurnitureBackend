@@ -40,6 +40,14 @@ namespace OA.Domain.Common.Models
             Data = data;
             Message = message;
         }
+
+        public SuccessResponseResult(int id, dynamic? data, string? message)
+        {
+            IsSuccess = true;
+            Id = id;
+            Data = data;
+            Message = message;
+        }
     }
 
     public class ErrorResponseResult : ResponseResult

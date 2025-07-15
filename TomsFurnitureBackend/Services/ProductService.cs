@@ -6,6 +6,7 @@ using TomsFurnitureBackend.Extensions;
 using TomsFurnitureBackend.Models;
 using TomsFurnitureBackend.Services.IServices;
 using TomsFurnitureBackend.VModels;
+using TomsFurnitureBackend.Mappings;
 using static TomsFurnitureBackend.VModels.ProductVModel;
 
 namespace TomsFurnitureBackend.Services

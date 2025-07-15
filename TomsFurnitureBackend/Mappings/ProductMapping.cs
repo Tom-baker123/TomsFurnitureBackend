@@ -1,6 +1,7 @@
 ﻿using TomsFurnitureBackend.Models;
 using TomsFurnitureBackend.VModels;
 using static TomsFurnitureBackend.VModels.ProductVModel;
+using TomsFurnitureBackend.Mappings;
 
 namespace TomsFurnitureBackend.Extensions
 {
@@ -190,6 +191,42 @@ namespace TomsFurnitureBackend.Extensions
             entity.UnitId = model.UnitId;
             entity.IsActive = model.IsActive ?? entity.IsActive;
             entity.UpdatedDate = DateTime.UtcNow;
+        }
+    }
+
+    public static class ProductVariantMapping
+    {
+        public static ProductVModel.ProductVariantGetVModel ToGetVModel(this ProductVariant entity)
+        {
+            return new ProductVModel.ProductVariantGetVModel
+            {
+                Id = entity.Id,
+                OriginalPrice = entity.OriginalPrice,
+                DiscountedPrice = entity.DiscountedPrice,
+                StockQty = entity.StockQty,
+                ColorId = entity.ColorId,
+                ColorName = entity.Color?.ColorName,
+                ColorCode = entity.Color?.ColorCode,
+                SizeId = entity.SizeId,
+                SizeName = entity.Size?.SizeName,
+                MaterialId = entity.MaterialId,
+                MaterialName = entity.Material?.MaterialName,
+                UnitId = entity.UnitId,
+                UnitName = entity.Unit?.UnitName,
+                Images = entity.ProductVariantImages?.Select(img => new ProductVModel.ProductVariantImageGetVModel
+                {
+                    Id = img.Id,
+                    ImageUrl = img.ImageUrl,
+                    Attribute = img.Attribute,
+                    DisplayOrder = img.DisplayOrder,
+                    IsActive = img.IsActive,
+                    CreatedDate = img.CreatedDate,
+                    UpdatedDate = img.UpdatedDate,
+                    CreatedBy = img.CreatedBy,
+                    UpdatedBy = img.UpdatedBy,
+                    ProVarId = img.ProVarId
+                }).ToList() ?? new List<ProductVModel.ProductVariantImageGetVModel>()
+            };
         }
     }
 }
