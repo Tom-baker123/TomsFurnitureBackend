@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using OA.Domain.Common.Models;
 using TomsFurnitureBackend.Extensions;
 using TomsFurnitureBackend.Models;
@@ -16,7 +16,7 @@ namespace TomsFurnitureBackend.Services
             _context = context;
         }
 
-        // Validation d�ng chung cho th�m/s?a
+        // Validation dùng chung cho thêm/sửa
         public static string Validate(OrderAddressCreateVModel model)
         {
             if (string.IsNullOrWhiteSpace(model.Recipient))
@@ -61,7 +61,31 @@ namespace TomsFurnitureBackend.Services
             if (!string.IsNullOrEmpty(validation))
                 return new ErrorResponseResult(validation);
 
+            // Lấy danh sách địa chỉ của user
+            var userAddresses = _context.OrderAddresses.Where(x => x.UserId == model.UserId);
+            var addressCount = await userAddresses.CountAsync();
+
             var entity = model.ToEntity();
+
+            if (addressCount == 0)
+            {
+                // Nếu là địa chỉ đầu tiên, đặt mặc định
+                entity.IsDeafaultAddress = true;
+            }
+            else if (model.IsDeafaultAddress)
+            {
+                // Nếu thêm mới và muốn đặt mặc định, tắt mặc định các địa chỉ khác
+                foreach (var addr in await userAddresses.ToListAsync())
+                {
+                    addr.IsDeafaultAddress = false;
+                }
+                entity.IsDeafaultAddress = true;
+            }
+            else
+            {
+                entity.IsDeafaultAddress = false;
+            }
+
             _context.OrderAddresses.Add(entity);
             await _context.SaveChangesAsync();
             return new SuccessResponseResult(entity.ToGetVModel(), "Order address created successfully.");
@@ -76,6 +100,21 @@ namespace TomsFurnitureBackend.Services
             var entity = await _context.OrderAddresses.FindAsync(model.Id);
             if (entity == null)
                 return new ErrorResponseResult("Order address not found.");
+
+            // Nếu cập nhật và muốn đặt mặc định
+            if (model.IsDeafaultAddress)
+            {
+                var userAddresses = _context.OrderAddresses.Where(x => x.UserId == model.UserId && x.Id != model.Id);
+                foreach (var addr in await userAddresses.ToListAsync())
+                {
+                    addr.IsDeafaultAddress = false;
+                }
+                entity.IsDeafaultAddress = true;
+            }
+            else
+            {
+                entity.IsDeafaultAddress = model.IsDeafaultAddress;
+            }
 
             entity.UpdateEntity(model);
             await _context.SaveChangesAsync();

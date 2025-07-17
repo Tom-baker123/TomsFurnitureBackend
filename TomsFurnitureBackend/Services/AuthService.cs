@@ -954,5 +954,67 @@ namespace TomsFurnitureBackend.Services
                 return new ErrorResponseResult($"An error occurred while updating user: {ex.Message}");
             }
         }
+
+        // Cập nhật mật khẩu người dùng
+        public async Task<ResponseResult> UpdatePasswordAsync(UpdatePasswordVModel model, HttpContext httpContext)
+        {
+            try
+            {
+                // Kiểm tra trạng thái đăng nhập
+                var authStatus = await GetAuthStatusAsync(httpContext.User, httpContext);
+                if (!authStatus.IsAuthenticated)
+                {
+                    _logger.LogWarning("Update password failed: User is not logged in.");
+                    return new ErrorResponseResult("User is not logged in.");
+                }
+                // Lấy userId từ claims
+                var claimUserId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(claimUserId))
+                {
+                    _logger.LogWarning("Update password failed: Invalid user session.");
+                    return new ErrorResponseResult("Invalid user session.");
+                }
+                int userId = int.Parse(claimUserId);
+                // Kiểm tra dữ liệu đầu vào
+                var currentPassword = model.CurrentPassword?.Trim();
+                var newPassword = model.NewPassword?.Trim();
+                var confirmNewPassword = model.ConfirmNewPassword?.Trim();
+                if (string.IsNullOrEmpty(currentPassword) || string.IsNullOrEmpty(newPassword) || string.IsNullOrEmpty(confirmNewPassword))
+                {
+                    return new ErrorResponseResult("All password fields are required.");
+                }
+                if (newPassword.Length < 6)
+                {
+                    return new ErrorResponseResult("New password must be at least 6 characters long.");
+                }
+                if (newPassword != confirmNewPassword)
+                {
+                    return new ErrorResponseResult("Confirm new password does not match new password.");
+                }
+                // Tìm người dùng
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+                if (user == null)
+                {
+                    return new ErrorResponseResult("User not found.");
+                }
+                // Kiểm tra mật khẩu cũ
+                if (!BCrypt.Net.BCrypt.Verify(currentPassword, user.PasswordHash))
+                {
+                    return new ErrorResponseResult("Current password is incorrect.");
+                }
+                // Cập nhật mật khẩu mới
+                user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+                user.UpdatedDate = DateTime.UtcNow;
+                user.UpdatedBy = "System";
+                await _context.SaveChangesAsync();
+                _logger.LogInformation("Password updated successfully for user {UserId}", userId);
+                return new SuccessResponseResult(null, "Password updated successfully.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Error while updating password: {Error}", ex.Message);
+                return new ErrorResponseResult($"An error occurred while updating password: {ex.Message}");
+            }
+        }
     }
 }

@@ -23,5 +23,7 @@ namespace TomsFurnitureBackend.Services.Interfaces
         // Phương thức cho quên mật khẩu
         Task<ResponseResult> ForgotPasswordAsync(ForgotPasswordVModel model);
         Task<ResponseResult> ResetPasswordAsync(ResetPasswordVModel model);
+        // Sửa lại: chỉ nhận model và HttpContext, không nhận userId
+        Task<ResponseResult> UpdatePasswordAsync(UpdatePasswordVModel model, HttpContext httpContext);
     }
 }

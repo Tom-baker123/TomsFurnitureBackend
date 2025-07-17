@@ -101,4 +101,12 @@
         public bool? IsActive { get; set; }
         public int RoleId { get; set; }
     }
+
+    // ViewModel để cập nhật mật khẩu người dùng
+    public class UpdatePasswordVModel
+    {
+        public string CurrentPassword { get; set; } = null!;
+        public string NewPassword { get; set; } = null!;
+        public string ConfirmNewPassword { get; set; } = null!;
+    }
 }
