@@ -4,19 +4,25 @@ using TomsFurnitureBackend.Extensions;
 using TomsFurnitureBackend.Models;
 using TomsFurnitureBackend.Services.IServices;
 using TomsFurnitureBackend.VModels;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
+using TomsFurnitureBackend.Services.Interfaces;
 
 namespace TomsFurnitureBackend.Services
 {
     public class OrderAddressService : IOrderAddressService
     {
         private readonly TomfurnitureContext _context;
+        private readonly IAuthService _authService;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public OrderAddressService(TomfurnitureContext context)
+        public OrderAddressService(TomfurnitureContext context, IAuthService authService, IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
+            _authService = authService;
+            _httpContextAccessor = httpContextAccessor;
         }
 
-        // Validation dùng chung cho thêm/sửa
         public static string Validate(OrderAddressCreateVModel model)
         {
             if (string.IsNullOrWhiteSpace(model.Recipient))
@@ -42,6 +48,24 @@ namespace TomsFurnitureBackend.Services
 
         public async Task<List<OrderAddressGetVModel>> GetAllAsync(int? userId = null)
         {
+            // Nếu không truyền userId, tự động lấy từ xác thực
+            if (!userId.HasValue)
+            {
+                var httpContext = _httpContextAccessor.HttpContext;
+                var user = httpContext?.User;
+                if (user != null)
+                {
+                    var authStatus = await _authService.GetAuthStatusAsync(user, httpContext);
+                    if (authStatus.IsAuthenticated)
+                    {
+                        var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                        if (!string.IsNullOrEmpty(userIdClaim) && int.TryParse(userIdClaim, out int uid))
+                        {
+                            userId = uid;
+                        }
+                    }
+                }
+            }
             var query = _context.OrderAddresses.AsQueryable();
             if (userId.HasValue)
                 query = query.Where(x => x.UserId == userId);
