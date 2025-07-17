@@ -540,5 +540,35 @@ namespace TomsFurnitureBackend.Controllers
                 return StatusCode(500, new { Message = "An error occurred while updating user.", Error = ex.Message });
             }
         }
+
+        /// <summary>
+        /// Updates the password for the current user.
+        /// </summary>
+        [HttpPost("update-password")]
+        [Authorize]
+        public async Task<IActionResult> UpdatePassword([FromBody] UpdatePasswordVModel model)
+        {
+            try
+            {
+                if (model == null)
+                {
+                    _logger.LogWarning("Update password attempt with null model.");
+                    return BadRequest(new { Message = "Invalid password update data." });
+                }
+                var result = await _authService.UpdatePasswordAsync(model, HttpContext);
+                if (!result.IsSuccess)
+                {
+                    _logger.LogWarning("Update password failed: {Message}", result.Message);
+                    return BadRequest(new { Message = result.Message });
+                }
+                _logger.LogInformation("Password updated successfully.");
+                return Ok(new { Success = true, Message = result.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during password update.");
+                return StatusCode(500, new { Message = "An error occurred during password update.", Error = ex.Message });
+            }
+        }
     }
 }
