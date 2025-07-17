@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using OA.Domain.Common.Models;
 using TomsFurnitureBackend.Services.IServices;
 using TomsFurnitureBackend.VModels;
+using TomsFurnitureBackend.Services.Interfaces;
+using TomsFurnitureBackend.Services;
 
 namespace TomsFurnitureBackend.Controllers
 {
@@ -11,11 +13,13 @@ namespace TomsFurnitureBackend.Controllers
     {
         private readonly IOrderAddressService _service;
         private readonly ILogger<OrderAddressController> _logger;
+        private readonly IAuthService _authService;
 
-        public OrderAddressController(IOrderAddressService service, ILogger<OrderAddressController> logger)
+        public OrderAddressController(IOrderAddressService service, ILogger<OrderAddressController> logger, IAuthService authService)
         {
             _service = service;
             _logger = logger;
+            _authService = authService;
         }
 
         [HttpGet]
@@ -36,6 +40,12 @@ namespace TomsFurnitureBackend.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] OrderAddressCreateVModel model)
         {
+            // Không nh?n userId t? body, t? ??ng l?y t? xác th?c
+            var authStatus = await _authService.GetAuthStatusAsync(User, HttpContext);
+            if (!authStatus.IsAuthenticated)
+                return Unauthorized(new { Message = "User is not authenticated." });
+            // Gán userId vào model t? xác th?c
+            model.UserId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
             var result = await _service.CreateAsync(model);
             if (!result.IsSuccess)
                 return BadRequest(result.Message);
@@ -45,6 +55,12 @@ namespace TomsFurnitureBackend.Controllers
         [HttpPut]
         public async Task<IActionResult> Update([FromBody] OrderAddressUpdateVModel model)
         {
+            // Không nh?n userId t? body, t? ??ng l?y t? xác th?c
+            var authStatus = await _authService.GetAuthStatusAsync(User, HttpContext);
+            if (!authStatus.IsAuthenticated)
+                return Unauthorized(new { Message = "User is not authenticated." });
+            // Gán userId vào model t? xác th?c
+            model.UserId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
             var result = await _service.UpdateAsync(model);
             if (!result.IsSuccess)
                 return BadRequest(result.Message);
