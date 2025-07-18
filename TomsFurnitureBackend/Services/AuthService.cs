@@ -301,6 +301,7 @@ namespace TomsFurnitureBackend.Services
                 return new AuthStatusVModel
                 {
                     IsAuthenticated = true,
+                    UserId = dbUser.Id, // Trả về userId
                     UserName = dbUser.UserName,
                     Email = dbUser.Email,
                     Role = dbUser.Role.RoleName

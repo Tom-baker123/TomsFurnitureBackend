@@ -4,6 +4,7 @@
     public class AuthStatusVModel
     {
         public bool IsAuthenticated { get; set; }
+        public int? UserId { get; set; } // Thêm userId
         public string? UserName { get; set; }
         public string? Email { get; set; }
         public string? Role { get; set; }

@@ -71,6 +71,7 @@ namespace TomsFurnitureBackend.Controllers
                 return Ok(new
                 {
                     result.IsAuthenticated,
+                    result.UserId, // Bổ sung trả về userId
                     result.UserName,
                     result.Email,
                     result.Role,
@@ -323,7 +324,7 @@ namespace TomsFurnitureBackend.Controllers
         /// Retrieves a user by ID (admin only).
         /// </summary>
         [HttpGet("users/{id}")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,User")]
         public async Task<IActionResult> GetUserById(int id)
         {
             try
@@ -505,7 +506,7 @@ namespace TomsFurnitureBackend.Controllers
         /// Updates an existing user (admin only).
         /// </summary>
         [HttpPut("users/update/{id}")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,User")]
         public async Task<IActionResult> UpdateUser(int id, [FromBody] UpdateUserVModel model)
         {
             try
