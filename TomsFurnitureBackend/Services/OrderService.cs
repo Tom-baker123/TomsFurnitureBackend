@@ -18,11 +18,12 @@ namespace TomsFurnitureBackend.Services
     {
         private readonly TomfurnitureContext _context;
         private readonly IAuthService _authService;
-
-        public OrderService(TomfurnitureContext context, IAuthService authService)
+        private readonly IVnPayService _vnPayService;
+        public OrderService(TomfurnitureContext context, IAuthService authService, IVnPayService vnPayService)
         {
             _context = context;
             _authService = authService;
+            _vnPayService = vnPayService;
         }
 
         private static string ValidateOrder(OrderCreateVModel model)
@@ -34,13 +35,6 @@ namespace TomsFurnitureBackend.Services
             if (!model.UserGuestId.HasValue)
                 return "UserGuestId is required for guest order.";
             return string.Empty;
-        }
-
-        private static string ValidateOrderUpdate(OrderUpdateVModel model)
-        {
-            if (model.Id <= 0)
-                return "Order Id is invalid.";
-            return ValidateOrder(model);
         }
 
         public async Task<ResponseResult> ProcessPaymentAsync(OrderCreateVModel model, ClaimsPrincipal user, HttpContext httpContext)
@@ -150,9 +144,22 @@ namespace TomsFurnitureBackend.Services
             _context.Orders.Add(order);
             await _context.SaveChangesAsync();
 
+            // Tạo URL thanh toán VNPAY
+            var paymentInfo = new TomsFurnitureBackend.Common.Models.Vnpay.PaymentInformationModel
+            {
+                OrderType = order.OrderSta?.OrderStatusName ?? "default",
+                Amount = (double)(order.Total ?? 0),
+                OrderDescription = order.Note ?? "",
+                Name = isAuthenticated ? (order.UserId?.ToString() ?? "User") : (order.UserGuestId?.ToString() ?? "User Guest")
+            };
+            var paymentUrl = _vnPayService.CreatePaymentUrl(paymentInfo, httpContext);
+
             return new SuccessResponseResult(
-                order.Id, 
-                order.ToGetVModel(),
+                new {
+                    OrderId = order.Id,
+                    Order = order.ToGetVModel(),
+                    PaymentUrl = paymentUrl
+                },
                 "Payment processed successfully. Order is pending confirmation."
             );
         }
