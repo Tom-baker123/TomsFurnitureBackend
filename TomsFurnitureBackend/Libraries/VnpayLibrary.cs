@@ -12,12 +12,12 @@ namespace TomsFurnitureBackend.Libraries
         private readonly SortedList<string, string> _requestData = new SortedList<string, string>(new VnPayCompare());
         private readonly SortedList<string, string> _responseData = new SortedList<string, string>(new VnPayCompare());
 
-        // B??c 1: Nh?n d? li?u tr? v? t? VNPAY và ki?m tra ch? ký
+        // Bước 1: Nhận dữ liệu trả về từ VNPAY và kiểm tra chữ ký
         public PaymentResponseModel GetFullResponseData(IQueryCollection collection, string hashSecret)
         {
-            // T?o m?i ??i t??ng VnpayLibrary ?? l?u d? li?u tr? v?
+            // Tạo mới đối tượng VnpayLibrary để lưu dữ liệu trả về
             var vnPay = new VnpayLibrary();
-            // L?p qua t?t c? các tham s? tr? v?, ch? l?y các tham s? b?t ??u b?ng 'vnp_'
+            // Lặp qua tất cả các tham số trả về, chỉ lấy các tham số bắt đầu bằng 'vnp_'
             foreach (var (key, value) in collection)
             {
                 if (!string.IsNullOrEmpty(key) && key.StartsWith("vnp_"))
@@ -25,26 +25,26 @@ namespace TomsFurnitureBackend.Libraries
                     vnPay.AddResponseData(key, value);
                 }
             }
-            // L?y mã ??n hàng t? tham s? tr? v?
+            // Lấy mã đơn hàng từ tham số trả về
             var orderIdStr = vnPay.GetResponseData("vnp_TxnRef");
             var orderId = long.TryParse(orderIdStr, out var oid) ? oid : 0;
-            // L?y mã giao d?ch VNPAY
+            // Lấy mã giao dịch VNPAY
             var vnPayTranIdStr = vnPay.GetResponseData("vnp_TransactionNo");
             var vnPayTranId = long.TryParse(vnPayTranIdStr, out var tid) ? tid : 0;
-            // L?y mã ph?n h?i t? VNPAY
+            // Lấy mã phản hồi từ VNPAY
             var vnpResponseCode = vnPay.GetResponseData("vnp_ResponseCode");
-            // L?y mã hash ?? ki?m tra ch? ký
+            // Lấy mã hash để kiểm tra chữ ký
             var vnpSecureHash = collection.FirstOrDefault(k => k.Key == "vnp_SecureHash").Value;
-            // L?y thông tin ??n hàng
+            // Lấy thông tin đơn hàng
             var orderInfo = vnPay.GetResponseData("vnp_OrderInfo");
-            // Ki?m tra ch? ký h?p l? hay không
+            // Kiểm tra chữ ký hợp lệ hay không
             var checkSignature = vnPay.ValidateSignature(vnpSecureHash, hashSecret);
             if (!checkSignature)
                 return new PaymentResponseModel()
                 {
                     Success = false
                 };
-            // Tr? v? k?t qu? thanh toán
+            // Trả về kết quả thanh toán
             return new PaymentResponseModel()
             {
                 Success = true,
@@ -58,7 +58,7 @@ namespace TomsFurnitureBackend.Libraries
             };
         }
 
-        // B??c 2: L?y ??a ch? IP c?a client th?c hi?n thanh toán
+        // Bước 2: Lấy địa chỉ IP của client thực hiện thanh toán
         public string GetIpAddress(HttpContext context)
         {
             var ipAddress = string.Empty;
@@ -87,7 +87,7 @@ namespace TomsFurnitureBackend.Libraries
             return "127.0.0.1";
         }
 
-        // B??c 3: Thêm d? li?u vào request g?i lên VNPAY
+        // Bước 3: Thêm dữ liệu vào request gửi lên VNPAY
         public void AddRequestData(string key, string value)
         {
             if (!string.IsNullOrEmpty(value))
@@ -96,7 +96,7 @@ namespace TomsFurnitureBackend.Libraries
             }
         }
 
-        // B??c 4: Thêm d? li?u vào response nh?n t? VNPAY
+        // Bước 4: Thêm dữ liệu vào response nhận từ VNPAY
         public void AddResponseData(string key, string value)
         {
             if (!string.IsNullOrEmpty(value))
@@ -105,18 +105,18 @@ namespace TomsFurnitureBackend.Libraries
             }
         }
 
-        // B??c 5: L?y d? li?u t? response
+        // Bước 5: Lấy dữ liệu từ response
         public string GetResponseData(string key)
         {
             return _responseData.TryGetValue(key, out var retValue) ? retValue : string.Empty;
         }
 
-        // B??c 6: T?o URL thanh toán g?i lên VNPAY
+        // Bước 6: Tạo URL thanh toán gửi lên VNPAY
         public string CreateRequestUrl(string baseUrl, string vnpHashSecret)
         {
             var data = new StringBuilder();
 
-            // Ghép các tham s? thành query string
+            // Ghép các tham số thành query string
             foreach (var (key, value) in _requestData.Where(kv => !string.IsNullOrEmpty(kv.Value)))
             {
                 data.Append(WebUtility.UrlEncode(key) + "=" + WebUtility.UrlEncode(value) + "&");
@@ -131,14 +131,14 @@ namespace TomsFurnitureBackend.Libraries
                 signData = signData.Remove(data.Length - 1, 1);
             }
 
-            // T?o mã hash ?? xác th?c giao d?ch
+            // Tạo mã hash để xác thực giao dịch
             var vnpSecureHash = HmacSha512(vnpHashSecret, signData);
             baseUrl += "vnp_SecureHash=" + vnpSecureHash;
 
             return baseUrl;
         }
 
-        // B??c 7: Ki?m tra ch? ký giao d?ch tr? v? t? VNPAY
+        // Bước 7: Kiểm tra chữ ký giao dịch trả về từ VNPAY
         public bool ValidateSignature(string inputHash, string secretKey)
         {
             var rspRaw = GetResponseData();
@@ -146,7 +146,7 @@ namespace TomsFurnitureBackend.Libraries
             return myChecksum.Equals(inputHash, StringComparison.InvariantCultureIgnoreCase);
         }
 
-        // B??c 8: T?o mã hash HMAC SHA512
+        // Bước 8: Tạo mã hash HMAC SHA512
         private string HmacSha512(string key, string inputData)
         {
             var hash = new StringBuilder();
@@ -164,7 +164,7 @@ namespace TomsFurnitureBackend.Libraries
             return hash.ToString();
         }
 
-        // B??c 9: Ghép d? li?u response thành chu?i ?? xác th?c ch? ký
+        // Bước 9: Ghép dữ liệu response thành chuỗi để xác thực chữ ký
         private string GetResponseData()
         {
             var data = new StringBuilder();
@@ -183,7 +183,7 @@ namespace TomsFurnitureBackend.Libraries
                 data.Append(WebUtility.UrlEncode(key) + "=" + WebUtility.UrlEncode(value) + "&");
             }
 
-            //remove last '&'
+            // Xóa ký tự '&' cuối cùng
             if (data.Length > 0)
             {
                 data.Remove(data.Length - 1, 1);
@@ -192,7 +192,7 @@ namespace TomsFurnitureBackend.Libraries
             return data.ToString();
         }
 
-        // Bước 10: So sánh key cho SortedList
+        // Bước 10: So sánh key cho SortedList
         public class VnPayCompare : IComparer<string>
         {
             public int Compare(string x, string y)
