@@ -8,6 +8,7 @@ using OA.Domain.Common.Models;
 using TomsFurnitureBackend.Models;
 using TomsFurnitureBackend.Services.IServices;
 using TomsFurnitureBackend.VModels;
+using TomsFurnitureBackend.Helpers;
 
 namespace TomsFurnitureBackend.Controllers
 {
@@ -60,26 +61,18 @@ namespace TomsFurnitureBackend.Controllers
                 string? imageUrl = null;
                 if (imageFile != null && imageFile.Length > 0)
                 {
-                    // 1.1 Kiểm tra định dạng file
-                    string[] allowedExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
-                    var fileExtensions = Path.GetExtension(imageFile.FileName).ToLower();
-                    if (!allowedExtensions.Contains(fileExtensions)) {
-                        return BadRequest("Format file not support!");
-                    }
-
-                    // 1.2 cấu hình tham số upload
-                    var uploadParams = new ImageUploadParams
+                    try
                     {
-                        File = new FileDescription(imageFile.FileName, imageFile.OpenReadStream())
-                    };
-
-                    // Upload ảnh lên cloudinary
-                    var uploadResult = await _cloudinary.UploadAsync(uploadParams);
-                    if (uploadResult.Error != null) {
-                        return BadRequest($"Upload error: {uploadResult.Error}");
+                        imageUrl = await CloudinaryHelper.HandleSliderImageUpload(_cloudinary, imageFile, _logger);
                     }
-
-                    imageUrl = uploadResult.SecureUrl.AbsoluteUri;
+                    catch (ArgumentException ex)
+                    {
+                        return BadRequest(ex.Message);
+                    }
+                    catch (Exception ex)
+                    {
+                        return BadRequest(ex.Message);
+                    }
                 }
 
                 // B2: Gọi service để tạo thương hiệu
@@ -164,12 +157,17 @@ namespace TomsFurnitureBackend.Controllers
                 string? imageUrl = null;
                 if (imageFile != null && imageFile.Length > 0)
                 {
-                    // 1.1 Kiểm tra định dạng file
-                    string[] allowedExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
-                    var fileExtensions = Path.GetExtension(imageFile.FileName).ToLower();
-                    if (!allowedExtensions.Contains(fileExtensions))
+                    try
                     {
-                        return BadRequest("Format file not support!");
+                        imageUrl = await CloudinaryHelper.HandleSliderImageUpload(_cloudinary, imageFile, _logger);
+                    }
+                    catch (ArgumentException ex)
+                    {
+                        return BadRequest(ex.Message);
+                    }
+                    catch (Exception ex)
+                    {
+                        return BadRequest(ex.Message);
                     }
 
                     // Tìm thương hiệu để lấy ảnh URL cũ
@@ -208,21 +206,6 @@ namespace TomsFurnitureBackend.Controllers
                             return StatusCode(500, new { Message = $"Error when delete old image in Cloudinary: {ex.Message}" });
                         }
                     }
-
-                    // 1.3 cấu hình tham số upload
-                    var uploadParams = new ImageUploadParams
-                    {
-                        File = new FileDescription(imageFile.FileName, imageFile.OpenReadStream())
-                    };
-
-                    // Upload ảnh lên cloudinary
-                    var uploadResult = await _cloudinary.UploadAsync(uploadParams);
-                    if (uploadResult.Error != null)
-                    {
-                        return BadRequest($"Upload error: {uploadResult.Error}");
-                    }
-
-                    imageUrl = uploadResult.SecureUrl.AbsoluteUri;
                 }
                 // B2: Gọi service để cập nhật thương hiệu
                 var result = await _brandService.UpdateAsync(brandVModel, imageUrl);
