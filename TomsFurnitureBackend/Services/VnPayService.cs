@@ -1,12 +1,12 @@
-using Microsoft.AspNetCore.Http;
+ï»¿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using TomsFurnitureBackend.Common.Models.Vnpay;
 using TomsFurnitureBackend.Libraries;
 using TomsFurnitureBackend.Services.IServices;
+using TomsFurnitureBackend.Models;
 
 namespace TomsFurnitureBackend.Services
 {
-    // D?ch v? x? lý logic thanh toán VNPAY
     public class VnPayService : IVnPayService
     {
         private readonly IConfiguration _configuration;
@@ -14,8 +14,6 @@ namespace TomsFurnitureBackend.Services
         {
             _configuration = configuration;
         }
-
-        // B??c 1: T?o URL thanh toán VNPAY d?a trên thông tin ??n hàng
         public string CreatePaymentUrl(PaymentInformationModel model, HttpContext context)
         {
             var timeZoneById = TimeZoneInfo.FindSystemTimeZoneById(_configuration["TimeZoneId"]);
@@ -24,7 +22,7 @@ namespace TomsFurnitureBackend.Services
             var pay = new VnpayLibrary();
             var urlCallBack = _configuration["Vnpay:PaymentBackReturnUrl"];
 
-            // Thêm các tham s? c?n thi?t cho VNPAY
+            // ThÃªm cÃ¡c tham s? c?n thi?t cho VNPAY
             pay.AddRequestData("vnp_Version", _configuration["Vnpay:Version"]);
             pay.AddRequestData("vnp_Command", _configuration["Vnpay:Command"]);
             pay.AddRequestData("vnp_TmnCode", _configuration["Vnpay:TmnCode"]);
@@ -38,17 +36,9 @@ namespace TomsFurnitureBackend.Services
             pay.AddRequestData("vnp_ReturnUrl", urlCallBack);
             pay.AddRequestData("vnp_TxnRef", tick);
 
-            // T?o URL thanh toán
+            // T?o URL thanh toÃ¡n
             var paymentUrl = pay.CreateRequestUrl(_configuration["Vnpay:BaseUrl"], _configuration["Vnpay:HashSecret"]);
             return paymentUrl;
-        }
-
-        // B??c 2: X? lý callback tr? v? t? VNPAY
-        public PaymentResponseModel PaymentExecute(IQueryCollection collections)
-        {
-            var pay = new VnpayLibrary();
-            var response = pay.GetFullResponseData(collections, _configuration["Vnpay:HashSecret"]);
-            return response;
         }
     }
 }
