@@ -7,6 +7,7 @@ using OA.Domain.Common.Models;
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using TomsFurnitureBackend.Helpers;
 using TomsFurnitureBackend.Models;
 using TomsFurnitureBackend.Services.Interfaces;
 using TomsFurnitureBackend.Services.IServices;
@@ -63,29 +64,18 @@ namespace TomsFurnitureBackend.Controllers
                 string? imageUrl = null;
                 if (imageFile != null && imageFile.Length > 0)
                 {
-                    // Kiểm tra định dạng file
-                    string[] allowedExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
-                    var fileExtension = Path.GetExtension(imageFile.FileName).ToLower();
-                    if (!allowedExtensions.Contains(fileExtension))
+                    try
                     {
-                        return BadRequest("File format not supported!");
+                        imageUrl = await CloudinaryHelper.HandleSliderImageUpload(_cloudinary, imageFile, _logger);
                     }
-
-                    // Cấu hình tham số upload
-                    var uploadParams = new ImageUploadParams
+                    catch (ArgumentException ex)
                     {
-                        File = new FileDescription(imageFile.FileName, imageFile.OpenReadStream())
-                    };
-
-                    // Upload ảnh lên Cloudinary
-                    var uploadResult = await _cloudinary.UploadAsync(uploadParams);
-                    if (uploadResult.Error != null)
-                    {
-                        _logger.LogError("Cloudinary upload error: {ErrorMessage}", uploadResult.Error.Message);
-                        return BadRequest($"Cloudinary upload error: {uploadResult.Error.Message}");
+                        return BadRequest($"File format not supported: {ex.Message}");
                     }
-
-                    imageUrl = uploadResult.SecureUrl.AbsoluteUri;
+                    catch (Exception ex)
+                    {
+                        return BadRequest($"Cloudinary upload error: {ex.Message}");
+                    }
                 }
 
                 // B2: Gọi service để tạo nhà cung cấp
@@ -123,14 +113,6 @@ namespace TomsFurnitureBackend.Controllers
                 string? imageUrl = null;
                 if (imageFile != null && imageFile.Length > 0)
                 {
-                    // Kiểm tra định dạng file
-                    string[] allowedExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
-                    var fileExtension = Path.GetExtension(imageFile.FileName).ToLower();
-                    if (!allowedExtensions.Contains(fileExtension))
-                    {
-                        return BadRequest("File format not supported!");
-                    }
-
                     // Tìm nhà cung cấp để lấy URL ảnh cũ
                     var existingSupplier = await _context.Suppliers
                         .AsNoTracking()
@@ -140,52 +122,19 @@ namespace TomsFurnitureBackend.Controllers
                         return NotFound($"Supplier not found with ID: {supplierVModel.Id}");
                     }
 
-                    // Xóa ảnh cũ trên Cloudinary nếu tồn tại
-                    if (!string.IsNullOrEmpty(existingSupplier.ImageUrl))
+                    // Upload ảnh mới lên Cloudinary sử dụng CloudinaryHelper
+                    try
                     {
-                        try
-                        {
-                            // Trích xuất PublicId từ ImageUrl
-                            var uri = new Uri(existingSupplier.ImageUrl);
-                            var publicId = uri.AbsolutePath
-                                .Split(new[] { "/image/upload/" }, StringSplitOptions.None)[1]
-                                .Replace(Path.GetExtension(uri.AbsolutePath), "")
-                                .TrimEnd('/');
-
-                            // Xóa ảnh trên Cloudinary
-                            var deletionParams = new DeletionParams(publicId)
-                            {
-                                ResourceType = ResourceType.Image
-                            };
-                            var deletionResult = await _cloudinary.DestroyAsync(deletionParams);
-                            if (deletionResult.Error != null)
-                            {
-                                _logger.LogWarning("Failed to delete old image on Cloudinary: {ErrorMessage}", deletionResult.Error.Message);
-                            }
-                            else
-                            {
-                                _logger.LogInformation("Deleted old image on Cloudinary with PublicId: {PublicId}", publicId);
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogWarning("Error deleting old image on Cloudinary: {Error}", ex.Message);
-                        }
+                        imageUrl = await CloudinaryHelper.HandleSliderImageUpload(_cloudinary, imageFile, _logger);
                     }
-
-                    // Upload ảnh mới lên Cloudinary
-                    var uploadParams = new ImageUploadParams
+                    catch (ArgumentException ex)
                     {
-                        File = new FileDescription(imageFile.FileName, imageFile.OpenReadStream())
-                    };
-                    var uploadResult = await _cloudinary.UploadAsync(uploadParams);
-                    if (uploadResult.Error != null)
-                    {
-                        _logger.LogError("Cloudinary upload error: {ErrorMessage}", uploadResult.Error.Message);
-                        return BadRequest($"Cloudinary upload error: {uploadResult.Error.Message}");
+                        return BadRequest($"File format not supported: {ex.Message}");
                     }
-
-                    imageUrl = uploadResult.SecureUrl.AbsoluteUri;
+                    catch (Exception ex)
+                    {
+                        return BadRequest($"Cloudinary upload error: {ex.Message}");
+                    }
                 }
 
                 // B2: Gọi service để cập nhật nhà cung cấp
