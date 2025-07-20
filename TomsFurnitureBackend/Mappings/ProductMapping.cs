@@ -1,4 +1,5 @@
-﻿using TomsFurnitureBackend.Models;
+﻿using System.Linq;
+using TomsFurnitureBackend.Models;
 using TomsFurnitureBackend.VModels;
 using static TomsFurnitureBackend.VModels.ProductVModel;
 using TomsFurnitureBackend.Mappings;
@@ -34,10 +35,10 @@ namespace TomsFurnitureBackend.Extensions
                 OriginalPrice = model.OriginalPrice,
                 DiscountedPrice = model.DiscountedPrice,
                 StockQty = model.StockQty,
-                ColorId = model.ColorId,
-                SizeId = model.SizeId,
-                MaterialId = model.MaterialId,
-                UnitId = model.UnitId,
+                ColorId = (model.ColorId.HasValue && model.ColorId.Value > 0) ? model.ColorId : null,
+                SizeId = (model.SizeId.HasValue && model.SizeId.Value > 0) ? model.SizeId : null,
+                MaterialId = (model.MaterialId.HasValue && model.MaterialId.Value > 0) ? model.MaterialId : null,
+                UnitId = (model.UnitId.HasValue && model.UnitId.Value > 0) ? model.UnitId : null,
                 IsActive = true,
                 CreatedDate = DateTime.UtcNow
             };
@@ -48,17 +49,17 @@ namespace TomsFurnitureBackend.Extensions
         {
             return new ProductVariant
             {
-                Id = model.Id,
+                Id = model.Id ?? 0,
                 OriginalPrice = model.OriginalPrice,
                 DiscountedPrice = model.DiscountedPrice,
                 StockQty = model.StockQty,
-                ColorId = model.ColorId,
-                SizeId = model.SizeId,
-                MaterialId = model.MaterialId,
-                UnitId = model.UnitId,
+                ColorId = (model.ColorId.HasValue && model.ColorId.Value > 0) ? model.ColorId : null,
+                SizeId = (model.SizeId.HasValue && model.SizeId.Value > 0) ? model.SizeId : null,
+                MaterialId = (model.MaterialId.HasValue && model.MaterialId.Value > 0) ? model.MaterialId : null,
+                UnitId = (model.UnitId.HasValue && model.UnitId.Value > 0) ? model.UnitId : null,
                 IsActive = model.IsActive ?? true,
-                CreatedDate = model.Id == 0 ? DateTime.UtcNow : null, // Chỉ set CreatedDate cho biến thể mới
-                UpdatedDate = model.Id > 0 ? DateTime.UtcNow : null // Set UpdatedDate khi cập nhật
+                CreatedDate = (model.Id ?? 0) == 0 ? DateTime.UtcNow : null,
+                UpdatedDate = (model.Id ?? 0) > 0 ? DateTime.UtcNow : null
             };
         }
 
@@ -77,19 +78,12 @@ namespace TomsFurnitureBackend.Extensions
 
             // Xử lý các biến thể
             var existingVariantIds = entity.ProductVariants.Select(pv => pv.Id).ToList();
-            var updatedVariantIds = model.ProductVariants.Where(v => v.Id > 0).Select(v => v.Id).ToList();
-
-            //// Xóa các biến thể không còn trong danh sách cập nhật
-            //var variantsToRemove = entity.ProductVariants.Where(pv => !updatedVariantIds.Contains(pv.Id)).ToList();
-            //foreach (var variant in variantsToRemove)
-            //{
-            //    context.ProductVariants.Remove(variant);
-            //}
+            var updatedVariantIds = model.ProductVariants.Where(v => (v.Id ?? 0) > 0).Select(v => v.Id ?? 0).ToList();
 
             // Thêm hoặc cập nhật biến thể
             foreach (var variantModel in model.ProductVariants)
             {
-                if (variantModel.Id == 0)
+                if ((variantModel.Id ?? 0) == 0)
                 {
                     // Thêm biến thể mới
                     var newVariant = variantModel.ToEntity();
@@ -99,7 +93,7 @@ namespace TomsFurnitureBackend.Extensions
                 else
                 {
                     // Cập nhật biến thể hiện có
-                    var existingVariant = entity.ProductVariants.FirstOrDefault(pv => pv.Id == variantModel.Id);
+                    var existingVariant = entity.ProductVariants.FirstOrDefault(pv => pv.Id == (variantModel.Id ?? 0));
                     if (existingVariant != null)
                     {
                         existingVariant.UpdateVariantEntity(variantModel);
@@ -185,10 +179,10 @@ namespace TomsFurnitureBackend.Extensions
             entity.OriginalPrice = model.OriginalPrice;
             entity.DiscountedPrice = model.DiscountedPrice;
             entity.StockQty = model.StockQty;
-            entity.ColorId = model.ColorId;
-            entity.SizeId = model.SizeId;
-            entity.MaterialId = model.MaterialId;
-            entity.UnitId = model.UnitId;
+            entity.ColorId = (model.ColorId.HasValue && model.ColorId.Value > 0) ? model.ColorId : null;
+            entity.SizeId = (model.SizeId.HasValue && model.SizeId.Value > 0) ? model.SizeId : null;
+            entity.MaterialId = (model.MaterialId.HasValue && model.MaterialId.Value > 0) ? model.MaterialId : null;
+            entity.UnitId = (model.UnitId.HasValue && model.UnitId.Value > 0) ? model.UnitId : null;
             entity.IsActive = model.IsActive ?? entity.IsActive;
             entity.UpdatedDate = DateTime.UtcNow;
         }
