@@ -4,15 +4,20 @@ using TomsFurnitureBackend.Common.Models.Vnpay;
 using TomsFurnitureBackend.Libraries;
 using TomsFurnitureBackend.Services.IServices;
 using TomsFurnitureBackend.Models;
+using TomsFurnitureBackend.Common.Contansts;
+using Microsoft.EntityFrameworkCore;
+using System.Threading.Tasks;
 
 namespace TomsFurnitureBackend.Services
 {
     public class VnPayService : IVnPayService
     {
         private readonly IConfiguration _configuration;
-        public VnPayService(IConfiguration configuration)
+        private readonly TomfurnitureContext _context;
+        public VnPayService(IConfiguration configuration, TomfurnitureContext context)
         {
             _configuration = configuration;
+            _context = context;
         }
         public string CreatePaymentUrl(PaymentInformationModel model, HttpContext context)
         {
@@ -39,6 +44,28 @@ namespace TomsFurnitureBackend.Services
             // T?o URL thanh toán
             var paymentUrl = pay.CreateRequestUrl(_configuration["Vnpay:BaseUrl"], _configuration["Vnpay:HashSecret"]);
             return paymentUrl;
+        }
+
+        public async Task<bool> ProcessVnPayCallbackAsync(IQueryCollection query)
+        {
+            var hashSecret = _configuration["Vnpay:HashSecret"];
+            var vnpayLib = new VnpayLibrary();
+            var paymentResult = vnpayLib.GetFullResponseData(query, hashSecret);
+
+            var orderId = int.TryParse(paymentResult.OrderId, out var oid) ? oid : 0;
+            var order = await _context.Orders.FirstOrDefaultAsync(o => o.Id == orderId);
+            if (order == null)
+                return false;
+
+            if (paymentResult.Success && paymentResult.VnPayResponseCode == "00")
+                order.PaymentStatus = PaymentStatus.Paid;
+            else if (paymentResult.VnPayResponseCode == "24")
+                order.PaymentStatus = PaymentStatus.Cancelled;
+            else
+                order.PaymentStatus = PaymentStatus.Failed;
+
+            await _context.SaveChangesAsync();
+            return true;
         }
     }
 }

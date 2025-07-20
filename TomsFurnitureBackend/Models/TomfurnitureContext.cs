@@ -343,6 +343,7 @@ public partial class TomfurnitureContext : DbContext
                 .HasColumnType("datetime");
             entity.Property(e => e.OrderStaId).HasColumnName("OrderStaID");
             entity.Property(e => e.PaymentMethodId).HasColumnName("PaymentMethodID");
+            entity.Property(e => e.PaymentStatus).HasMaxLength(100);
             entity.Property(e => e.PriceDiscount).HasColumnType("decimal(15, 2)");
             entity.Property(e => e.PromotionId).HasColumnName("PromotionID");
             entity.Property(e => e.ShippingPrice).HasColumnType("decimal(15, 2)");
@@ -521,12 +522,10 @@ public partial class TomfurnitureContext : DbContext
 
             entity.HasOne(d => d.Color).WithMany(p => p.ProductVariants)
                 .HasForeignKey(d => d.ColorId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__ProductVa__Color__5EBF139D");
 
             entity.HasOne(d => d.Material).WithMany(p => p.ProductVariants)
                 .HasForeignKey(d => d.MaterialId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__ProductVa__Mater__60A75C0F");
 
             entity.HasOne(d => d.Product).WithMany(p => p.ProductVariants)
@@ -536,12 +535,10 @@ public partial class TomfurnitureContext : DbContext
 
             entity.HasOne(d => d.Size).WithMany(p => p.ProductVariants)
                 .HasForeignKey(d => d.SizeId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__ProductVa__SizeI__5FB337D6");
 
             entity.HasOne(d => d.Unit).WithMany(p => p.ProductVariants)
                 .HasForeignKey(d => d.UnitId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__ProductVa__UnitI__619B8048");
         });
 

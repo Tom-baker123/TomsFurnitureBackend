@@ -5,6 +5,7 @@ using static TomsFurnitureBackend.VModels.ProductVModel;
 using System.Collections.Generic;
 using System;
 using TomsFurnitureBackend.Extensions;
+using TomsFurnitureBackend.Common.Contansts;
 
 namespace TomsFurnitureBackend.Mappings
 {
@@ -28,7 +29,7 @@ namespace TomsFurnitureBackend.Mappings
                 Note = model.Note,
                 CreatedDate = DateTime.UtcNow,
                 IsActive = true,
-                PaymentStatus = false, // M?c ??nh ch?a thanh toán
+                PaymentStatus = model.PaymentStatus ?? PaymentStatus.Unpaid, // M?c ??nh ch?a thanh toán
                 OrderDetails = new List<OrderDetail>(),
                 UserGuestId = model.UserGuestId,
                 IsUserGuest = model.UserGuestId.HasValue // B?t true n?u có UserGuestId
@@ -94,6 +95,7 @@ namespace TomsFurnitureBackend.Mappings
                 UpdatedDate = entity.UpdatedDate,
                 CreatedBy = entity.CreatedBy,
                 UpdatedBy = entity.UpdatedBy,
+                PaymentStatus = entity.PaymentStatus,
                 OrderDetails = entity.OrderDetails?.Select(x => x.ToGetVModel()).ToList() ?? new List<OrderDetailGetVModel>()
             };
         }

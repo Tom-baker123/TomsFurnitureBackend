@@ -15,6 +15,7 @@ namespace TomsFurnitureBackend.VModels
             public string? Note { get; set; }
             public List<OrderDetailCreateVModel> OrderDetails { get; set; } = new();
             public int? UserGuestId { get; set; }
+            public string? PaymentStatus { get; set; }
         }
 
         public class OrderUpdateVModel : OrderCreateVModel
@@ -36,6 +37,7 @@ namespace TomsFurnitureBackend.VModels
             public string? CreatedBy { get; set; }
             public string? UpdatedBy { get; set; }
             public List<OrderDetailGetVModel> OrderDetails { get; set; } = new();
+            public string? PaymentStatus { get; set; }
         }
 
         public class OrderDetailCreateVModel

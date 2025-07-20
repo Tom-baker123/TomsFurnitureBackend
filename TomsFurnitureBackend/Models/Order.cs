@@ -45,7 +45,7 @@ public partial class Order
 
     public int? UserGuestId { get; set; }
 
-    public bool PaymentStatus { get; set; }
+    public string PaymentStatus { get; set; } = null!;
 
     public virtual OrderAddress? OrderAdd { get; set; }
 

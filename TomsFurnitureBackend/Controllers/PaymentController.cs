@@ -39,5 +39,14 @@ namespace TomsFurnitureBackend.Controllers
             var url = _vnPayService.CreatePaymentUrl(paymentInfo, HttpContext);
             return Ok(new { PaymentUrl = url });
         }
+
+        [HttpPost("vnpay-callback")]
+        public async Task<IActionResult> VnPayCallback()
+        {
+            var result = await _vnPayService.ProcessVnPayCallbackAsync(Request.Query);
+            if (!result)
+                return BadRequest("Payment callback failed or order not found.");
+            return Ok(new { Message = "Payment status updated successfully." });
+        }
     }
 }
