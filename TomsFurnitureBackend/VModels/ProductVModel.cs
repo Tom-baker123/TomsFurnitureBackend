@@ -66,23 +66,23 @@ namespace TomsFurnitureBackend.VModels
             public decimal OriginalPrice { get; set; }
             public decimal? DiscountedPrice { get; set; }
             public int StockQty { get; set; }
-            public int ColorId { get; set; }
-            public int SizeId { get; set; }
-            public int MaterialId { get; set; }
-            public int UnitId { get; set; }
+            public int? ColorId { get; set; }
+            public int? SizeId { get; set; }
+            public int? MaterialId { get; set; }
+            public int? UnitId { get; set; }
         }
 
         public class ProductVariantUpdateVModel
         {
             [JsonPropertyOrder(-1)]
-            public int Id { get; set; }
+            public int? Id { get; set; }
             public decimal OriginalPrice { get; set; }
             public decimal? DiscountedPrice { get; set; }
             public int StockQty { get; set; }
-            public int ColorId { get; set; }
-            public int SizeId { get; set; }
-            public int MaterialId { get; set; }
-            public int UnitId { get; set; }
+            public int? ColorId { get; set; }
+            public int? SizeId { get; set; }
+            public int? MaterialId { get; set; }
+            public int? UnitId { get; set; }
             public bool? IsActive { get; set; }
         }
 
@@ -92,14 +92,14 @@ namespace TomsFurnitureBackend.VModels
             public decimal OriginalPrice { get; set; }
             public decimal? DiscountedPrice { get; set; }
             public int StockQty { get; set; }
-            public int ColorId { get; set; }
+            public int? ColorId { get; set; }
             public string? ColorName { get; set; }
             public string? ColorCode { get; set; }
-            public int SizeId { get; set; }
+            public int? SizeId { get; set; }
             public string? SizeName { get; set; }
-            public int MaterialId { get; set; }
+            public int? MaterialId { get; set; }
             public string? MaterialName { get; set; }
-            public int UnitId { get; set; }
+            public int? UnitId { get; set; }
             public string? UnitName { get; set; }
             // Bổ sung danh sách ảnh biến thể
             public List<ProductVariantImageGetVModel> Images { get; set; } = new List<ProductVariantImageGetVModel>();

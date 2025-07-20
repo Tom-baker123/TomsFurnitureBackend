@@ -87,19 +87,19 @@ namespace TomsFurnitureBackend.Services
                 {
                     foreach (var variant in create.ProductVariants)
                     {
-                        if (!await _context.Colors.AnyAsync(c => c.Id == variant.ColorId))
+                        if (variant.ColorId > 0 && !await _context.Colors.AnyAsync(c => c.Id == variant.ColorId))
                         {
                             return new ErrorResponseResult($"Color with ID {variant.ColorId} does not exist.");
                         }
-                        if (!await _context.Sizes.AnyAsync(s => s.Id == variant.SizeId))
+                        if (variant.SizeId > 0 && !await _context.Sizes.AnyAsync(s => s.Id == variant.SizeId))
                         {
                             return new ErrorResponseResult($"Size with ID {variant.SizeId} does not exist.");
                         }
-                        if (!await _context.Materials.AnyAsync(m => m.Id == variant.MaterialId))
+                        if (variant.MaterialId > 0 && !await _context.Materials.AnyAsync(m => m.Id == variant.MaterialId))
                         {
                             return new ErrorResponseResult($"Material with ID {variant.MaterialId} does not exist.");
                         }
-                        if (!await _context.Units.AnyAsync(u => u.Id == variant.UnitId))
+                        if (variant.UnitId > 0 && !await _context.Units.AnyAsync(u => u.Id == variant.UnitId))
                         {
                             return new ErrorResponseResult($"Unit with ID {variant.UnitId} does not exist.");
                         }
@@ -137,19 +137,19 @@ namespace TomsFurnitureBackend.Services
                             }
                         }
                         // Kiểm tra khóa ngoại
-                        if (!await _context.Colors.AnyAsync(c => c.Id == variant.ColorId))
+                        if (variant.ColorId > 0 && !await _context.Colors.AnyAsync(c => c.Id == variant.ColorId))
                         {
                             return new ErrorResponseResult($"Color with ID {variant.ColorId} does not exist.");
                         }
-                        if (!await _context.Sizes.AnyAsync(s => s.Id == variant.SizeId))
+                        if (variant.SizeId > 0 && !await _context.Sizes.AnyAsync(s => s.Id == variant.SizeId))
                         {
                             return new ErrorResponseResult($"Size with ID {variant.SizeId} does not exist.");
                         }
-                        if (!await _context.Materials.AnyAsync(m => m.Id == variant.MaterialId))
+                        if (variant.MaterialId > 0 && !await _context.Materials.AnyAsync(m => m.Id == variant.MaterialId))
                         {
                             return new ErrorResponseResult($"Material with ID {variant.MaterialId} does not exist.");
                         }
-                        if (!await _context.Units.AnyAsync(u => u.Id == variant.UnitId))
+                        if (variant.UnitId > 0 && !await _context.Units.AnyAsync(u => u.Id == variant.UnitId))
                         {
                             return new ErrorResponseResult($"Unit with ID {variant.UnitId} does not exist.");
                         }
@@ -423,7 +423,7 @@ namespace TomsFurnitureBackend.Services
                         .ToListAsync();
                     if (colorIds.Any())
                     {
-                        query = query.Where(p => p.ProductVariants.Any(pv => colorIds.Contains(pv.ColorId)));
+                        query = query.Where(p => p.ProductVariants.Any(pv => colorIds.Contains(pv.ColorId ?? 0)));
                     }
                     else
                     {
@@ -440,7 +440,7 @@ namespace TomsFurnitureBackend.Services
                         .ToListAsync();
                     if (materialIds.Any())
                     {
-                        query = query.Where(p => p.ProductVariants.Any(pv => materialIds.Contains(pv.MaterialId)));
+                        query = query.Where(p => p.ProductVariants.Any(pv => materialIds.Contains(pv.MaterialId ?? 0)));
                     }
                     else
                     {
@@ -457,7 +457,7 @@ namespace TomsFurnitureBackend.Services
                         .ToListAsync();
                     if (sizeIds.Any())
                     {
-                        query = query.Where(p => p.ProductVariants.Any(pv => sizeIds.Contains(pv.SizeId)));
+                        query = query.Where(p => p.ProductVariants.Any(pv => sizeIds.Contains(pv.SizeId ?? 0)));
                     }
                     else
                     {
@@ -605,13 +605,13 @@ namespace TomsFurnitureBackend.Services
                     OriginalPrice = variant.OriginalPrice,
                     DiscountedPrice = variant.DiscountedPrice,
                     StockQty = variant.StockQty,
-                    ColorId = variant.ColorId,
+                    ColorId = variant.ColorId ?? 0,
                     ColorName = variant.Color?.ColorName,
-                    SizeId = variant.SizeId,
+                    SizeId = variant.SizeId ?? 0,
                     SizeName = variant.Size?.SizeName,
-                    MaterialId = variant.MaterialId,
+                    MaterialId = variant.MaterialId ?? 0,
                     MaterialName = variant.Material?.MaterialName,
-                    UnitId = variant.UnitId,
+                    UnitId = variant.UnitId ?? 0,
                     UnitName = variant.Unit?.UnitName
                 };
             }
@@ -731,7 +731,7 @@ namespace TomsFurnitureBackend.Services
                 // Kiểm tra ràng buộc trước khi xóa hoặc cập nhật biến thể
                 var variantIdsToRemove = product.ProductVariants
                     .Select(pv => pv.Id)
-                    .Except(model.ProductVariants.Where(v => v.Id > 0).Select(v => v.Id))
+                    .Except(model.ProductVariants.Where(v => (v.Id ?? 0) > 0).Select(v => v.Id ?? 0))
                     .ToList();
                 if (variantIdsToRemove.Any())
                 {

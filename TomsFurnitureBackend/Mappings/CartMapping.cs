@@ -51,14 +51,14 @@ namespace TomsFurnitureBackend.Extensions
                     OriginalPrice = entity.ProVar.OriginalPrice,
                     DiscountedPrice = entity.ProVar.DiscountedPrice,
                     StockQty = entity.ProVar.StockQty,
-                    ColorId = entity.ProVar.ColorId,
+                    ColorId = entity.ProVar.ColorId ?? 0,
                     ColorName = entity.ProVar.Color?.ColorName,
                     ColorCode = entity.ProVar.Color?.ColorCode,
-                    SizeId = entity.ProVar.SizeId,
+                    SizeId = entity.ProVar.SizeId ?? 0,
                     SizeName = entity.ProVar.Size?.SizeName,
-                    MaterialId = entity.ProVar.MaterialId,
+                    MaterialId = entity.ProVar.MaterialId ?? 0,
                     MaterialName = entity.ProVar.Material?.MaterialName,
-                    UnitId = entity.ProVar.UnitId,
+                    UnitId = entity.ProVar.UnitId ?? 0,
                     UnitName = entity.ProVar.Unit?.UnitName,
                     Images = entity.ProVar.ProductVariantImages?.Select(img => new ProductVariantImageGetVModel
                     {
