@@ -26,39 +26,27 @@ namespace TomsFurnitureBackend.Services
             _authService = authService;
             _vnPayService = vnPayService;
         }
-
-        // Hàm kiểm tra dữ liệu đầu vào cho đơn hàng
-        // Trả về chuỗi rỗng nếu hợp lệ, trả về thông báo lỗi nếu có lỗi
-        private static string ValidateOrder(OrderCreateVModel model)
+       
+        private string ValidateOrderWithDb(OrderCreateVModel model)
         {
-            // Kiểm tra danh sách chi tiết đơn hàng
             if (model.OrderDetails == null || !model.OrderDetails.Any())
                 return "Order must have at least one order detail.";
-            // Kiểm tra từng chi tiết đơn hàng
             foreach (var detail in model.OrderDetails)
             {
-                if (detail.ProVarId <= 0)
-                    return "Product variant ID must be greater than 0.";
-                if (detail.Quantity <= 0)
-                    return "Quantity must be greater than 0.";
-                if (detail.Price < 0)
-                    return "Price must be non-negative.";
+                if (detail == null)
+                    return "Order detail cannot be null.";
+                // Kiểm tra proVarId phải > 0 và tồn tại trong ProductVariant
+                if (detail.ProVarId == null || detail.ProVarId <= 0 || !_context.ProductVariants.Any(pv => pv.Id == detail.ProVarId))
+                    return $"Product variant with ID {detail.ProVarId} does not exist.";
             }
-            // Kiểm tra phí vận chuyển
             if (model.ShippingPrice < 0)
                 return "Shipping price must be non-negative.";
-            // Kiểm tra phương thức thanh toán
             if (!model.PaymentMethodId.HasValue || model.PaymentMethodId <= 0)
                 return "Payment method is required.";
-            // Kiểm tra địa chỉ giao hàng
             if (!model.OrderAddId.HasValue || model.OrderAddId <= 0)
                 return "Order address is required.";
-            // Kiểm tra ghi chú (nếu có) không quá 500 ký tự
             if (!string.IsNullOrEmpty(model.Note) && model.Note.Length > 500)
                 return "Note must be less than 500 characters.";
-            // Kiểm tra UserGuestId cho đơn hàng khách vãng lai
-            //if (model.UserGuestId.HasValue && model.UserGuestId <= 0)
-            //    return "UserGuestId must be greater than 0 if provided.";
             return string.Empty;
         }
 
@@ -68,7 +56,44 @@ namespace TomsFurnitureBackend.Services
             var authStatus = await _authService.GetAuthStatusAsync(user, httpContext);
             bool isAuthenticated = authStatus.IsAuthenticated;
 
-            // Bước 2: Kiểm tra hợp lệ trạng thái đăng nhập/khách
+            // Nếu orderDetails null, empty, hoặc tất cả proVarId = 0 thì tự động lấy từ giỏ hàng
+            bool shouldLoadCart = model.OrderDetails == null || !model.OrderDetails.Any() || model.OrderDetails.All(d => d == null || d.ProVarId == 0);
+            if (shouldLoadCart)
+            {
+                if (isAuthenticated)
+                {
+                    var userIdClaim = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                    if (!string.IsNullOrEmpty(userIdClaim) && int.TryParse(userIdClaim, out int userId))
+                    {
+                        var cartItems = await _context.Carts
+                            .Where(c => c.UserId == userId)
+                            .Include(c => c.ProVar)
+                            .ToListAsync();
+                        model.OrderDetails = cartItems.Select(c => new OrderDetailCreateVModel
+                        {
+                            ProVarId = c.ProVarId,
+                            Quantity = c.Quantity,
+                            Price = c.ProVar.DiscountedPrice ?? c.ProVar.OriginalPrice
+                        }).ToList();
+                    }
+                }
+                else
+                {
+                    var guestCartJson = httpContext.Request.Cookies["GuestCart"];
+                    if (!string.IsNullOrEmpty(guestCartJson))
+                    {
+                        try
+                        {
+                            var cartItems = System.Text.Json.JsonSerializer.Deserialize<List<OrderDetailCreateVModel>>(guestCartJson);
+                            if (cartItems != null)
+                                model.OrderDetails = cartItems;
+                        }
+                        catch { /* ignore parse error */ }
+                    }
+                }
+            }
+
+            // Bước 2: Kiểm tra hợp lệ trạng thái đăng nhập/khách (giữ nguyên)
             if (isAuthenticated)
             {
                 // Nếu đã đăng nhập mà truyền UserGuestId thì báo lỗi
@@ -91,7 +116,7 @@ namespace TomsFurnitureBackend.Services
             }
 
             // Bước 3: Kiểm tra dữ liệu đầu vào đơn hàng
-            var validation = ValidateOrder(model);
+            var validation = ValidateOrderWithDb(model);
             if (!string.IsNullOrEmpty(validation))
                 return new ErrorResponseResult(validation);
 
@@ -99,6 +124,7 @@ namespace TomsFurnitureBackend.Services
             var order = model.ToEntity();
 
             // Bước 5: Nếu là user đã đăng nhập thì gán UserId cho đơn hàng
+            int? userIdForCart = null;
             if (isAuthenticated)
             {
                 var userIdClaim = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
@@ -107,6 +133,7 @@ namespace TomsFurnitureBackend.Services
                     order.UserId = userId;
                     order.IsUserGuest = false;
                     order.UserGuestId = null;
+                    userIdForCart = userId;
                 }
             }
 
@@ -182,22 +209,48 @@ namespace TomsFurnitureBackend.Services
             _context.Orders.Add(order);
             await _context.SaveChangesAsync();
 
-            // Bước 12: Tạo URL thanh toán VNPAY
-            var paymentInfo = new TomsFurnitureBackend.Common.Models.Vnpay.PaymentInformationModel
+            // --- XÓA GIỎ HÀNG SAU KHI ĐẶT HÀNG ---
+            if (isAuthenticated && userIdForCart.HasValue)
             {
-                OrderType = order.OrderSta?.OrderStatusName ?? "Pending Confirmation",
-                Amount = (double)(order.Total ?? 0),
-                OrderDescription = order.Note ?? "",
-                Name = isAuthenticated ? (order.UserId?.ToString() ?? "User") : (order.UserGuestId?.ToString() ?? "User Guest")
-            };
-            var paymentUrl = _vnPayService.CreatePaymentUrl(paymentInfo, httpContext);
+                // Xóa các bản ghi cart trong DB cho user đăng nhập
+                var userCartItems = _context.Carts.Where(c => c.UserId == userIdForCart.Value);
+                _context.Carts.RemoveRange(userCartItems);
+                await _context.SaveChangesAsync();
+            }
+            else
+            {
+                // Xóa cookie GuestCart cho khách vãng lai
+                httpContext.Response.Cookies.Delete("GuestCart", new Microsoft.AspNetCore.Http.CookieOptions
+                {
+                    Path = "/",
+                    Secure = true,
+                    SameSite = Microsoft.AspNetCore.Http.SameSiteMode.None,
+                    HttpOnly = true
+                });
+            }
+            // --- END XÓA GIỎ HÀNG ---
+
+            // Bước 12: Tạo URL thanh toán VNPAY
+            string paymentUrl = string.Empty;
+            if (order.PaymentMethodId == 2) 
+            {
+                var paymentInfo = new TomsFurnitureBackend.Common.Models.Vnpay.PaymentInformationModel
+                {
+                    OrderType = order.OrderSta?.OrderStatusName ?? "Pending Confirmation",
+                    Amount = (double)(order.Total ?? 0),
+                    OrderDescription = order.Note ?? "",
+                    Name = isAuthenticated ? (order.UserId?.ToString() ?? "User") : (order.UserGuestId?.ToString() ?? "User Guest")
+                };
+                paymentUrl = _vnPayService.CreatePaymentUrl(paymentInfo, httpContext);
+            }
+
 
             // Bước 13: Trả về kết quả thành công
             return new SuccessResponseResult(
                 new {
                     OrderId = order.Id,
                     Order = order.ToGetVModel(),
-                    PaymentUrl = paymentUrl
+                    PaymentUrl = paymentUrl // Trả về URL thanh toán nếu có
                 },
                 "Payment processed successfully. Order is pending confirmation."
             );
