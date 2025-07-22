@@ -90,6 +90,7 @@ namespace TomsFurnitureBackend.Mappings
                 Note = entity.Note,
                 IsActive = entity.IsActive,
                 OrderStaId = entity.OrderStaId,
+                OrderStatusName = entity.OrderSta.OrderStatusName,
                 IsPaid = entity.IsPaid,
                 CreatedDate = entity.CreatedDate,
                 UpdatedDate = entity.UpdatedDate,

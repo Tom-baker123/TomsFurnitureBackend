@@ -278,6 +278,7 @@ namespace TomsFurnitureBackend.Services
         public async Task<List<OrderGetVModel>> GetAllOrdersAsync()
         {
             var orders = await _context.Orders
+                .Include(o => o.OrderSta)
                 .Include(o => o.OrderDetails)
                     .ThenInclude(od => od.ProVar)
                         .ThenInclude(pv => pv.ProductVariantImages)

@@ -32,6 +32,7 @@ namespace TomsFurnitureBackend.VModels
             public int? UserId { get; set; }
             public bool IsUserGuest { get; set; }
             public int? UserGuestId { get; set; }
+            public string OrderStatusName { get; set; } = null!;
             public DateTime? CreatedDate { get; set; }
             public DateTime? UpdatedDate { get; set; }
             public string? CreatedBy { get; set; }

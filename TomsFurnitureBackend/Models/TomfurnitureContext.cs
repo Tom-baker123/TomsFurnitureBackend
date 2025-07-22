@@ -73,6 +73,8 @@ public partial class TomfurnitureContext : DbContext
 
     public virtual DbSet<Supplier> Suppliers { get; set; }
 
+    public virtual DbSet<Test> Tests { get; set; }
+
     public virtual DbSet<Unit> Units { get; set; }
 
     public virtual DbSet<User> Users { get; set; }
@@ -707,6 +709,17 @@ public partial class TomfurnitureContext : DbContext
                 .IsUnicode(false)
                 .HasColumnName("TaxID");
             entity.Property(e => e.UpdatedBy).HasMaxLength(255);
+            entity.Property(e => e.UpdatedDate).HasColumnType("datetime");
+        });
+
+        modelBuilder.Entity<Test>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__TEST__3214EC07FE965CB4");
+
+            entity.ToTable("TEST");
+
+            entity.Property(e => e.CreatedDate).HasColumnType("datetime");
+            entity.Property(e => e.Name).HasMaxLength(200);
             entity.Property(e => e.UpdatedDate).HasColumnType("datetime");
         });
 
