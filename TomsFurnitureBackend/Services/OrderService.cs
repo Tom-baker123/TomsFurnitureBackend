@@ -232,24 +232,29 @@ namespace TomsFurnitureBackend.Services
 
             // Bước 12: Tạo URL thanh toán VNPAY
             string paymentUrl = string.Empty;
-            if (order.PaymentMethodId == 2) 
+            // Load lại order từ DB kèm navigation property cần thiết
+            var orderWithStatus = await _context.Orders
+                .Include(o => o.OrderSta)
+                .Include(o => o.OrderDetails)
+                .FirstOrDefaultAsync(o => o.Id == order.Id);
+
+            if (order.PaymentMethodId == 2)
             {
                 var paymentInfo = new TomsFurnitureBackend.Common.Models.Vnpay.PaymentInformationModel
                 {
-                    OrderType = order.OrderSta?.OrderStatusName ?? "Pending Confirmation",
-                    Amount = (double)(order.Total ?? 0),
-                    OrderDescription = order.Note ?? "",
-                    Name = isAuthenticated ? (order.UserId?.ToString() ?? "User") : (order.UserGuestId?.ToString() ?? "User Guest")
+                    OrderType = orderWithStatus?.OrderSta?.OrderStatusName ?? "Pending Confirmation",
+                    Amount = (double)(orderWithStatus?.Total ?? 0),
+                    OrderDescription = orderWithStatus?.Note ?? "",
+                    Name = isAuthenticated ? (orderWithStatus?.UserId?.ToString() ?? "User") : (orderWithStatus?.UserGuestId?.ToString() ?? "User Guest")
                 };
                 paymentUrl = _vnPayService.CreatePaymentUrl(paymentInfo, httpContext, order.Id);
             }
-
 
             // Bước 13: Trả về kết quả thành công
             return new SuccessResponseResult(
                 new {
                     OrderId = order.Id,
-                    Order = order.ToGetVModel(),
+                    Order = orderWithStatus?.ToGetVModel(),
                     PaymentUrl = paymentUrl // Trả về URL thanh toán nếu có
                 },
                 "Payment processed successfully. Order is pending confirmation."
