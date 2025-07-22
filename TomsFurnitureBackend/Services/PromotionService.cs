@@ -67,15 +67,20 @@ namespace TomsFurnitureBackend.Services
             return ValidateCreate(model); // Tái sử dụng validation của Create
         }
 
-        public async Task<List<PromotionGetVModel>> GetAllAsync()
+        public async Task<List<PromotionGetVModel>> GetAllAsync(decimal? total = null)
         {
             try
             {
                 _logger.LogInformation("Bắt đầu lấy danh sách tất cả khuyến mãi.");
-                var promotions = await _context.Promotions
+                var query = _context.Promotions
                     .Include(p => p.PromotionType) // Bao gồm thông tin PromotionType
                     .OrderByDescending(p => p.CreatedDate)
-                    .ToListAsync();
+                    .AsQueryable();
+                if (total.HasValue)
+                {
+                    query = query.Where(p => p.OrderMinimum <= total.Value);
+                }
+                var promotions = await query.ToListAsync();
                 var result = promotions.Select(p => p.ToGetVModel()).ToList();
                 _logger.LogInformation("Lấy danh sách {Count} khuyến mãi thành công.", result.Count);
                 return result;
@@ -86,6 +91,11 @@ namespace TomsFurnitureBackend.Services
                     ex.Message, ex.InnerException?.Message);
                 throw new Exception($"Lỗi khi lấy danh sách khuyến mãi: {ex.Message}");
             }
+        }
+
+        public async Task<List<PromotionGetVModel>> GetAllAsync()
+        {
+            return await GetAllAsync(null);
         }
 
         public async Task<PromotionGetVModel?> GetByIdAsync(int id)

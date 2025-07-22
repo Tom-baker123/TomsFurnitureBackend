@@ -27,7 +27,8 @@ namespace TomsFurnitureBackend.Libraries
             }
             // Lấy mã đơn hàng từ tham số trả về
             var orderIdStr = vnPay.GetResponseData("vnp_TxnRef");
-            var orderId = long.TryParse(orderIdStr, out var oid) ? oid : 0;
+            // var orderId = long.TryParse(orderIdStr, out var oid) ? oid : 0;
+            var orderId = orderIdStr;
             // Lấy mã giao dịch VNPAY
             var vnPayTranIdStr = vnPay.GetResponseData("vnp_TransactionNo");
             var vnPayTranId = long.TryParse(vnPayTranIdStr, out var tid) ? tid : 0;

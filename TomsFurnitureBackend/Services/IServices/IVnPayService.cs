@@ -7,7 +7,7 @@ namespace TomsFurnitureBackend.Services.IServices
 {
     public interface IVnPayService
     {
-        string CreatePaymentUrl(PaymentInformationModel model, HttpContext context);
+        string CreatePaymentUrl(PaymentInformationModel model, HttpContext context, int OrderId);
         Task<bool> ProcessVnPayCallbackAsync(IQueryCollection query);
     }
 }

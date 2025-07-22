@@ -46,7 +46,7 @@ namespace TomsFurnitureBackend.Services
             return string.Empty;
         }
 
-        public async Task<List<OrderAddressGetVModel>> GetAllAsync(int? userId = null)
+        public async Task<List<OrderAddressGetVModel>> GetAllAsync(int? userId = null, bool? isDeafaultAddress = null)
         {
             // Nếu không truyền userId, tự động lấy từ xác thực
             if (!userId.HasValue)
@@ -69,6 +69,14 @@ namespace TomsFurnitureBackend.Services
             var query = _context.OrderAddresses.AsQueryable();
             if (userId.HasValue)
                 query = query.Where(x => x.UserId == userId);
+            //if (isDeafaultAddress.HasValue)
+            //    query = query.Where(x => x.IsDeafaultAddress == isDeafaultAddress.Value);
+            if (isDeafaultAddress.HasValue && isDeafaultAddress.Value)
+            {
+                return new List<OrderAddressGetVModel> {
+                    await query.Where(x => x.IsDeafaultAddress).Select(x => x.ToGetVModel()).FirstOrDefaultAsync()
+                };
+            }
             var list = await query.ToListAsync();
             return list.Select(x => x.ToGetVModel()).ToList();
         }

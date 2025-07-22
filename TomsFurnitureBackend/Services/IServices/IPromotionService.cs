@@ -8,7 +8,7 @@ namespace TomsFurnitureBackend.Services.IServices
     public interface IPromotionService
     {
         // Lấy danh sách tất cả khuyến mãi
-        Task<List<PromotionGetVModel>> GetAllAsync();
+        Task<List<PromotionGetVModel>> GetAllAsync(decimal? total = null);
         // Lấy khuyến mãi theo ID
         Task<PromotionGetVModel?> GetByIdAsync(int id);
         // Tạo mới khuyến mãi
