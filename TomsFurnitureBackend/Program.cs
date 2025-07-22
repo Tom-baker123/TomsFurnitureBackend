@@ -26,7 +26,6 @@ builder.Services.AddDbContext<TomfurnitureContext>(options =>
 
 //3. Services
 builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<ITestService, TestService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IOrderStatusService, OrderStatusService>();
 builder.Services.AddScoped<IOrderAddressService, OrderAddressService>();
@@ -81,8 +80,8 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.AccessDeniedPath = "/api/auth/accessdenied";
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.None;
-        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
-        // options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Chỉ dùng khi đưa lên hosting
+        // options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Chỉ dùng khi đưa lên hosting
         options.ExpireTimeSpan = TimeSpan.FromDays(7);
         options.SlidingExpiration = true;
     });
