@@ -25,12 +25,12 @@ namespace TomsFurnitureBackend.Controllers
         // [1.] Lấy danh sách tất cả khuyến mãi
         [HttpGet]
         [AllowAnonymous]
-        public async Task<IActionResult> GetAllPromotions()
+        public async Task<IActionResult> GetAllPromotions([FromQuery] decimal? total = null)
         {
             try
             {
                 _logger.LogInformation("Yêu cầu lấy danh sách tất cả khuyến mãi.");
-                var promotions = await _promotionService.GetAllAsync();
+                var promotions = await _promotionService.GetAllAsync(total);
                 _logger.LogInformation("Lấy danh sách {Count} khuyến mãi thành công.", promotions.Count);
                 return Ok(promotions);
             }

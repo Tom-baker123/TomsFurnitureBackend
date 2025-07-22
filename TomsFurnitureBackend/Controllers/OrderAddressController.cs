@@ -23,9 +23,11 @@ namespace TomsFurnitureBackend.Controllers
         }
 
         [HttpGet]
-        public async Task<List<OrderAddressGetVModel>> GetAll([FromQuery] int? userId)
+        public async Task<List<OrderAddressGetVModel>> GetAll(
+            [FromQuery] int? userId,
+            [FromQuery(Name = "isDeafaultAddress")] bool? isDeafaultAddress)
         {
-            return await _service.GetAllAsync(userId);
+            return await _service.GetAllAsync(userId, isDeafaultAddress);
         }
 
         [HttpGet("{id}")]
@@ -40,11 +42,9 @@ namespace TomsFurnitureBackend.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] OrderAddressCreateVModel model)
         {
-            // Không nh?n userId t? body, t? ??ng l?y t? xác th?c
             var authStatus = await _authService.GetAuthStatusAsync(User, HttpContext);
             if (!authStatus.IsAuthenticated)
                 return Unauthorized(new { Message = "User is not authenticated." });
-            // Gán userId vào model t? xác th?c
             model.UserId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
             var result = await _service.CreateAsync(model);
             if (!result.IsSuccess)
@@ -55,11 +55,9 @@ namespace TomsFurnitureBackend.Controllers
         [HttpPut]
         public async Task<IActionResult> Update([FromBody] OrderAddressUpdateVModel model)
         {
-            // Không nh?n userId t? body, t? ??ng l?y t? xác th?c
             var authStatus = await _authService.GetAuthStatusAsync(User, HttpContext);
             if (!authStatus.IsAuthenticated)
                 return Unauthorized(new { Message = "User is not authenticated." });
-            // Gán userId vào model t? xác th?c
             model.UserId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
             var result = await _service.UpdateAsync(model);
             if (!result.IsSuccess)

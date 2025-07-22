@@ -241,7 +241,7 @@ namespace TomsFurnitureBackend.Services
                     OrderDescription = order.Note ?? "",
                     Name = isAuthenticated ? (order.UserId?.ToString() ?? "User") : (order.UserGuestId?.ToString() ?? "User Guest")
                 };
-                paymentUrl = _vnPayService.CreatePaymentUrl(paymentInfo, httpContext);
+                paymentUrl = _vnPayService.CreatePaymentUrl(paymentInfo, httpContext, order.Id);
             }
 
 

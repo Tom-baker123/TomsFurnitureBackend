@@ -36,11 +36,11 @@ namespace TomsFurnitureBackend.Controllers
                 Name = order.User?.Id.ToString() ?? "Khách"
             };
             // Tạo URL thanh toán VNPAY
-            var url = _vnPayService.CreatePaymentUrl(paymentInfo, HttpContext);
+            var url = _vnPayService.CreatePaymentUrl(paymentInfo, HttpContext, orderId);
             return Ok(new { PaymentUrl = url });
         }
 
-        [HttpPost("vnpay-callback")]
+        [HttpGet("vnpay-callback")]
         public async Task<IActionResult> VnPayCallback()
         {
             var result = await _vnPayService.ProcessVnPayCallbackAsync(Request.Query);
