@@ -14,5 +14,6 @@ namespace TomsFurnitureBackend.Services.IServices
         Task<OrderGetVModel?> GetOrderByIdAsync(int id);
         Task<List<OrderGetVModel>> GetOrdersByUserAsync(int userId);
         Task<List<OrderGetVModel>> GetAllOrdersAsync();
+        Task<ResponseResult> UpdateOrderStatusAsync(int orderId, int newStatusId);
     }
 }
