@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace TomsFurnitureBackend.VModels
@@ -32,13 +32,14 @@ namespace TomsFurnitureBackend.VModels
             public int? UserId { get; set; }
             public bool IsUserGuest { get; set; }
             public int? UserGuestId { get; set; }
+            public string OrderStatusName { get; set; } = null!; // Đã xem
             public DateTime? CreatedDate { get; set; }
             public DateTime? UpdatedDate { get; set; }
             public string? CreatedBy { get; set; }
             public string? UpdatedBy { get; set; }
             public List<OrderDetailGetVModel> OrderDetails { get; set; } = new();
             public string? PaymentStatus { get; set; }
-            // B? sung t�n user v� userguest
+            // B? sung tên user và userguest
             public string? UserName { get; set; }
             public string? UserGuestFullName { get; set; }
         }
