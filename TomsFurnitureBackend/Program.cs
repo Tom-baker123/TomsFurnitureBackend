@@ -26,7 +26,6 @@ builder.Services.AddDbContext<TomfurnitureContext>(options =>
 
 //3. Services
 builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<ITestService, TestService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IOrderStatusService, OrderStatusService>();
 builder.Services.AddScoped<IOrderAddressService, OrderAddressService>();
