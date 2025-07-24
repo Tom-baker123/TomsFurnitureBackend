@@ -1,4 +1,4 @@
-﻿using TomsFurnitureBackend.Models;
+using TomsFurnitureBackend.Models;
 using TomsFurnitureBackend.VModels;
 using static TomsFurnitureBackend.VModels.OrderVModel;
 using static TomsFurnitureBackend.VModels.ProductVModel;
@@ -90,13 +90,17 @@ namespace TomsFurnitureBackend.Mappings
                 Note = entity.Note,
                 IsActive = entity.IsActive,
                 OrderStaId = entity.OrderStaId,
+                OrderStatusName = entity.OrderSta?.OrderStatusName,
                 IsPaid = entity.IsPaid,
                 CreatedDate = entity.CreatedDate,
                 UpdatedDate = entity.UpdatedDate,
                 CreatedBy = entity.CreatedBy,
                 UpdatedBy = entity.UpdatedBy,
                 PaymentStatus = entity.PaymentStatus,
-                OrderDetails = entity.OrderDetails?.Select(x => x.ToGetVModel()).ToList() ?? new List<OrderDetailGetVModel>()
+                OrderDetails = entity.OrderDetails?.Select(x => x.ToGetVModel()).ToList() ?? new List<OrderDetailGetVModel>(),
+                // Bổ sung tên user và userguest
+                UserName = entity.User?.UserName,
+                UserGuestFullName = entity.UserGuest?.FullName
             };
         }
 

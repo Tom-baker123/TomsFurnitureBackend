@@ -38,6 +38,9 @@ namespace TomsFurnitureBackend.VModels
             public string? UpdatedBy { get; set; }
             public List<OrderDetailGetVModel> OrderDetails { get; set; } = new();
             public string? PaymentStatus { get; set; }
+            // B? sung tên user và userguest
+            public string? UserName { get; set; }
+            public string? UserGuestFullName { get; set; }
         }
 
         public class OrderDetailCreateVModel

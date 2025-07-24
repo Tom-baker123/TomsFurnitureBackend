@@ -54,5 +54,14 @@ namespace TomsFurnitureBackend.Controllers
             var orders = await _orderService.GetAllOrdersAsync();
             return Ok(orders);
         }
+
+        [HttpPut("status/{orderId}")]
+        public async Task<IActionResult> UpdateOrderStatus(int orderId, [FromQuery] int newStatusId)
+        {
+            var result = await _orderService.UpdateOrderStatusAsync(orderId, newStatusId);
+            if (!result.IsSuccess)
+                return BadRequest(result.Message);
+            return Ok(result);
+        }
     }
 }
