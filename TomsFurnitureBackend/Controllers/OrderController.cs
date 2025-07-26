@@ -63,5 +63,14 @@ namespace TomsFurnitureBackend.Controllers
                 return BadRequest(result.Message);
             return Ok(result);
         }
+
+        [HttpPut("cancel/{orderId}")]
+        public async Task<IActionResult> CancelOrder(int orderId)
+        {
+            var result = await _orderService.CancelOrderAsync(orderId);
+            if (!result.IsSuccess)
+                return BadRequest(result.Message);
+            return Ok(result);
+        }
     }
 }

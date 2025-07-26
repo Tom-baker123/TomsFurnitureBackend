@@ -12,6 +12,7 @@ using TomsFurnitureBackend.Services.Interfaces;
 using TomsFurnitureBackend.VModels;
 using static TomsFurnitureBackend.VModels.OrderVModel;
 using TomsFurnitureBackend.Common.Contansts;
+using TomsFurnitureBackend.Helpers.EmailContentHelpers;
 
 namespace TomsFurnitureBackend.Services
 {
@@ -20,11 +21,13 @@ namespace TomsFurnitureBackend.Services
         private readonly TomfurnitureContext _context;
         private readonly IAuthService _authService;
         private readonly IVnPayService _vnPayService;
-        public OrderService(TomfurnitureContext context, IAuthService authService, IVnPayService vnPayService)
+        private readonly IEmailService _emailService;
+        public OrderService(TomfurnitureContext context, IAuthService authService, IVnPayService vnPayService, IEmailService emailService)
         {
             _context = context;
             _authService = authService;
             _vnPayService = vnPayService;
+            _emailService = emailService;
         }
        
         private string ValidateOrderWithDb(OrderCreateVModel model)
@@ -245,6 +248,9 @@ namespace TomsFurnitureBackend.Services
             var orderWithStatus = await _context.Orders
                 .Include(o => o.OrderSta)
                 .Include(o => o.OrderDetails)
+                .Include(o => o.OrderAdd)
+                .Include(o => o.User)
+                .Include(o => o.UserGuest)
                 .FirstOrDefaultAsync(o => o.Id == order.Id);
 
             if (order.PaymentMethodId == 2)
@@ -258,6 +264,26 @@ namespace TomsFurnitureBackend.Services
                 };
                 paymentUrl = _vnPayService.CreatePaymentUrl(paymentInfo, httpContext, order.Id);
             }
+
+            // Bước gửi email xác nhận thanh toán thành công (chỉ gửi khi là COD)
+            if (orderWithStatus?.PaymentMethodId == 1) // Chỉ gửi mail nếu là COD
+            {
+                string? toEmail = null;
+                if (orderWithStatus.User != null)
+                {
+                    toEmail = orderWithStatus.User.Email;
+                }
+                else if (orderWithStatus.UserGuest != null && !string.IsNullOrWhiteSpace(orderWithStatus.UserGuest.Email))
+                {
+                    toEmail = orderWithStatus.UserGuest.Email;
+                }
+                if (!string.IsNullOrWhiteSpace(toEmail))
+                {
+                    var (subject, body) = OrderEmailContentHelper.BuildOrderSuccessEmailContent(orderWithStatus);
+                    await _emailService.SendEmailAsync(toEmail, subject, body);
+                }
+            }
+
 
             // Bước 13: Trả về kết quả thành công
             return new SuccessResponseResult(
@@ -328,13 +354,15 @@ namespace TomsFurnitureBackend.Services
             return orders.Select(o => o.ToGetVModel()).ToList();
         }
 
-        // Cập nhật trạng thái đơn hàng chỉ cho phép tiến tới, không cho phép lùi lại trạng thái trước đó
+        // Cập nhật trạng thái đơn hàng chỉ cho phép tiến tới, không cho phép lùi lại trạng thái trước đó và không được nhảy trạng thái
         public async Task<ResponseResult> UpdateOrderStatusAsync(int orderId, int newStatusId)
         {
             var order = await _context.Orders
                 .Include(o => o.OrderSta)
                 .Include(o => o.OrderDetails)
                     .ThenInclude(od => od.ProVar)
+                .Include(o => o.User)
+                .Include(o => o.UserGuest)
                 .FirstOrDefaultAsync(o => o.Id == orderId);
             if (order == null)
                 return new ErrorResponseResult("Order not found.");
@@ -342,10 +370,10 @@ namespace TomsFurnitureBackend.Services
             if (!order.OrderStaId.HasValue)
                 return new ErrorResponseResult("Order does not have a current status.");
 
-            // Không cho phép cập nhật ngược trạng thái
-            if (newStatusId <= order.OrderStaId.Value)
+            // Không cho phép cập nhật ngược trạng thái hoặc nhảy trạng thái
+            if (newStatusId != order.OrderStaId.Value + 1)
             {
-                return new ErrorResponseResult("Cannot update to a previous or same status. Status can only move forward.");
+                return new ErrorResponseResult("Order status must be updated in sequence. Cannot skip or revert statuses.");
             }
 
             // Kiểm tra trạng thái mới có tồn tại không
@@ -383,7 +411,39 @@ namespace TomsFurnitureBackend.Services
             order.OrderStaId = newStatusId;
             order.UpdatedDate = DateTime.UtcNow;
             await _context.SaveChangesAsync();
+
+            // Gửi email thông báo trạng thái mới cho user/guest
+            string? toEmail = null;
+            if (order.User != null)
+                toEmail = order.User.Email;
+            else if (order.UserGuest != null && !string.IsNullOrWhiteSpace(order.UserGuest.Email))
+                toEmail = order.UserGuest.Email;
+
+            if (!string.IsNullOrWhiteSpace(toEmail))
+            {
+                var (subject, body) = OrderEmailContentHelper.BuildOrderStatusUpdateEmailContent(order, newStatus.OrderStatusName);
+                await _emailService.SendEmailAsync(toEmail, subject, body);
+            }
+
             return new SuccessResponseResult(order.ToGetVModel(), "Order status updated successfully.");
+        }
+
+        public async Task<ResponseResult> CancelOrderAsync(int orderId)
+        {
+            var order = await _context.Orders.FirstOrDefaultAsync(o => o.Id == orderId);
+            if (order == null)
+                return new ErrorResponseResult("Order not found.");
+
+            if (order.OrderStaId != 1) // 1 = Pending Confirmation
+                return new ErrorResponseResult("Chỉ được huỷ đơn khi đang ở trạng thái Chờ xác nhận.");
+
+            order.OrderStaId = 6; // 6 = Cancelled
+            order.UpdatedDate = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            // (Có thể gửi email thông báo huỷ đơn ở đây nếu muốn)
+
+            return new SuccessResponseResult(order.ToGetVModel(), "Order cancelled successfully.");
         }
     }
 }
