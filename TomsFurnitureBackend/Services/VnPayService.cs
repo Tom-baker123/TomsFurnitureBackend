@@ -7,6 +7,8 @@ using TomsFurnitureBackend.Models;
 using TomsFurnitureBackend.Common.Contansts;
 using Microsoft.EntityFrameworkCore;
 using System.Threading.Tasks;
+using TomsFurnitureBackend.Helpers.EmailContentHelpers;
+using System.Linq;
 
 namespace TomsFurnitureBackend.Services
 {
@@ -14,10 +16,12 @@ namespace TomsFurnitureBackend.Services
     {
         private readonly IConfiguration _configuration;
         private readonly TomfurnitureContext _context;
-        public VnPayService(IConfiguration configuration, TomfurnitureContext context)
+        private readonly IEmailService _emailService;
+        public VnPayService(IConfiguration configuration, TomfurnitureContext context, IEmailService emailService)
         {
             _configuration = configuration;
             _context = context;
+            _emailService = emailService;
         }
         public string CreatePaymentUrl(PaymentInformationModel model, HttpContext context, int OrderId)
         {
@@ -53,12 +57,45 @@ namespace TomsFurnitureBackend.Services
             var paymentResult = vnpayLib.GetFullResponseData(query, hashSecret);
 
             var orderId = int.TryParse(paymentResult.OrderId, out var oid) ? oid : 0;
-            var order = await _context.Orders.FirstOrDefaultAsync(o => o.Id == orderId);
+            var order = await _context.Orders
+                .Include(o => o.OrderDetails)
+                    .ThenInclude(od => od.ProVar)
+                        .ThenInclude(pv => pv.Product)
+                .Include(o => o.OrderDetails)
+                    .ThenInclude(od => od.ProVar)
+                        .ThenInclude(pv => pv.Color)
+                .Include(o => o.OrderDetails)
+                    .ThenInclude(od => od.ProVar)
+                        .ThenInclude(pv => pv.Size)
+                .Include(o => o.OrderDetails)
+                    .ThenInclude(od => od.ProVar)
+                        .ThenInclude(pv => pv.Material)
+                .Include(o => o.OrderAdd)
+                .Include(o => o.User)
+                .Include(o => o.UserGuest)
+                .FirstOrDefaultAsync(o => o.Id == orderId);
             if (order == null)
                 return false;
 
             if (paymentResult.Success && paymentResult.VnPayResponseCode == "00")
+            {
                 order.PaymentStatus = PaymentStatus.Paid;
+                // Gửi email xác nhận thanh toán thành công qua VNPAY
+                string? toEmail = null;
+                if (order.User != null)
+                {
+                    toEmail = order.User.Email;
+                }
+                else if (order.UserGuest != null && !string.IsNullOrWhiteSpace(order.UserGuest.Email))
+                {
+                    toEmail = order.UserGuest.Email;
+                }
+                if (!string.IsNullOrWhiteSpace(toEmail))
+                {
+                    var (subject, body) = VNPayEmailContentHelper.BuildVnPaySuccessEmailContent(order);
+                    await _emailService.SendEmailAsync(toEmail, subject, body);
+                }
+            }
             else if (paymentResult.VnPayResponseCode == "24")
                 order.PaymentStatus = PaymentStatus.Cancelled;
             else
