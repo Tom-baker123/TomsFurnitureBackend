@@ -65,6 +65,8 @@ public partial class TomfurnitureContext : DbContext
 
     public virtual DbSet<Role> Roles { get; set; }
 
+    public virtual DbSet<RoomType> RoomTypes { get; set; }
+
     public virtual DbSet<Size> Sizes { get; set; }
 
     public virtual DbSet<Slider> Sliders { get; set; }
@@ -189,6 +191,14 @@ public partial class TomfurnitureContext : DbContext
                 .HasColumnName("ImageURL");
             entity.Property(e => e.UpdatedBy).HasMaxLength(255);
             entity.Property(e => e.UpdatedDate).HasColumnType("datetime");
+
+            entity.HasOne(d => d.Parent).WithMany(p => p.InverseParent)
+                .HasForeignKey(d => d.ParentId)
+                .HasConstraintName("FK_Categories_Parent");
+
+            entity.HasOne(d => d.RoomType).WithMany(p => p.Categories)
+                .HasForeignKey(d => d.RoomTypeId)
+                .HasConstraintName("FK_Categories_RoomType");
         });
 
         modelBuilder.Entity<Color>(entity =>
@@ -610,6 +620,20 @@ public partial class TomfurnitureContext : DbContext
             entity.Property(e => e.RoleName)
                 .HasMaxLength(20)
                 .IsUnicode(false);
+            entity.Property(e => e.UpdatedBy).HasMaxLength(255);
+            entity.Property(e => e.UpdatedDate).HasColumnType("datetime");
+        });
+
+        modelBuilder.Entity<RoomType>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__RoomType__3214EC07EEE38D42");
+
+            entity.HasIndex(e => e.Slug, "UQ__RoomType__BC7B5FB668C0F1E3").IsUnique();
+
+            entity.Property(e => e.CreatedBy).HasMaxLength(255);
+            entity.Property(e => e.CreatedDate).HasColumnType("datetime");
+            entity.Property(e => e.RoomTypeName).HasMaxLength(100);
+            entity.Property(e => e.Slug).HasMaxLength(100);
             entity.Property(e => e.UpdatedBy).HasMaxLength(255);
             entity.Property(e => e.UpdatedDate).HasColumnType("datetime");
         });

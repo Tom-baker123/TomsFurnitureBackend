@@ -13,8 +13,11 @@ namespace TomsFurnitureBackend.Extensions
                 PhoneNumber = model.PhoneNumber,
                 AddressDetailRecipient = model.AddressDetailRecipient,
                 City = model.City,
+                CityCode = model.CityCode,
                 District = model.District,
+                DistrictCode = model.DistrictCode,
                 Ward = model.Ward,
+                WardCode = model.WardCode,
                 IsDeafaultAddress = model.IsDeafaultAddress,
                 UserId = model.UserId,
                 IsActive = true,
@@ -28,8 +31,11 @@ namespace TomsFurnitureBackend.Extensions
             entity.PhoneNumber = model.PhoneNumber;
             entity.AddressDetailRecipient = model.AddressDetailRecipient;
             entity.City = model.City;
+            entity.CityCode = model.CityCode;
             entity.District = model.District;
+            entity.DistrictCode = model.DistrictCode;
             entity.Ward = model.Ward;
+            entity.WardCode = model.WardCode;
             entity.IsDeafaultAddress = model.IsDeafaultAddress;
             entity.IsActive = model.IsActive ?? entity.IsActive;
             entity.UpdatedDate = DateTime.UtcNow;
@@ -44,8 +50,11 @@ namespace TomsFurnitureBackend.Extensions
                 PhoneNumber = entity.PhoneNumber,
                 AddressDetailRecipient = entity.AddressDetailRecipient,
                 City = entity.City,
+                CityCode = entity.CityCode,
                 District = entity.District,
+                DistrictCode = entity.DistrictCode,
                 Ward = entity.Ward,
+                WardCode = entity.WardCode,
                 IsDeafaultAddress = entity.IsDeafaultAddress,
                 IsActive = entity.IsActive,
                 UserId = entity.UserId,

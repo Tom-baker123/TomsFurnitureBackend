@@ -12,10 +12,13 @@ namespace TomsFurnitureBackend.VModels
         public string AddressDetailRecipient { get; set; } = null!;
         [Required]
         public string City { get; set; } = null!;
+        public int? CityCode { get; set; }
         [Required]
         public string District { get; set; } = null!;
+        public int? DistrictCode { get; set; }
         [Required]
         public string Ward { get; set; } = null!;
+        public int? WardCode { get; set; }
         public bool IsDeafaultAddress { get; set; }
         public int? UserId { get; set; }
     }

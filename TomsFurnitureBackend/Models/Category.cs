@@ -23,5 +23,15 @@ public partial class Category
 
     public string? UpdatedBy { get; set; }
 
+    public int? ParentId { get; set; }
+
+    public int? RoomTypeId { get; set; }
+
+    public virtual ICollection<Category> InverseParent { get; set; } = new List<Category>();
+
+    public virtual Category? Parent { get; set; }
+
     public virtual ICollection<Product> Products { get; set; } = new List<Product>();
+
+    public virtual RoomType? RoomType { get; set; }
 }
