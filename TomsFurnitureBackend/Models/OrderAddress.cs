@@ -33,6 +33,12 @@ public partial class OrderAddress
 
     public int? UserId { get; set; }
 
+    public int? CityCode { get; set; }
+
+    public int? DistrictCode { get; set; }
+
+    public int? WardCode { get; set; }
+
     public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
 
     public virtual User? User { get; set; }
