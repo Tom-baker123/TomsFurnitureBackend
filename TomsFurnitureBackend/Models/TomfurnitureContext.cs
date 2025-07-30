@@ -328,9 +328,12 @@ public partial class TomfurnitureContext : DbContext
 
             entity.HasIndex(e => e.Title, "UQ__News__2CB664DC80BB2873").IsUnique();
 
+            entity.HasIndex(e => e.Slug, "UQ__News__BC7B5FB675F8EEF6").IsUnique();
+
             entity.Property(e => e.CreatedBy).HasMaxLength(255);
             entity.Property(e => e.CreatedDate).HasColumnType("datetime");
             entity.Property(e => e.NewsAvatar).HasMaxLength(255);
+            entity.Property(e => e.Slug).HasMaxLength(200);
             entity.Property(e => e.Title).HasMaxLength(50);
             entity.Property(e => e.UpdatedBy).HasMaxLength(255);
             entity.Property(e => e.UpdatedDate).HasColumnType("datetime");
@@ -344,10 +347,13 @@ public partial class TomfurnitureContext : DbContext
         {
             entity.HasKey(e => e.Id).HasName("PK__Orders__3214EC0736702D95");
 
+            entity.HasIndex(e => e.OrderCode, "UQ__Orders__999B5229C3622B4A").IsUnique();
+
             entity.Property(e => e.CreatedBy).HasMaxLength(255);
             entity.Property(e => e.CreatedDate).HasColumnType("datetime");
             entity.Property(e => e.DeliveryDate).HasColumnType("datetime");
             entity.Property(e => e.OrderAddId).HasColumnName("OrderAddID");
+            entity.Property(e => e.OrderCode).HasMaxLength(50);
             entity.Property(e => e.OrderDate)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
@@ -465,12 +471,15 @@ public partial class TomfurnitureContext : DbContext
         {
             entity.HasKey(e => e.Id).HasName("PK__Products__3214EC07A6E158CB");
 
+            entity.HasIndex(e => e.Slug, "UQ__Products__BC7B5FB640076A28").IsUnique();
+
             entity.Property(e => e.BrandId).HasColumnName("BrandID");
             entity.Property(e => e.CategoryId).HasColumnName("CategoryID");
             entity.Property(e => e.CountriesId).HasColumnName("CountriesID");
             entity.Property(e => e.CreatedBy).HasMaxLength(255);
             entity.Property(e => e.CreatedDate).HasColumnType("datetime");
             entity.Property(e => e.ProductName).HasMaxLength(200);
+            entity.Property(e => e.Slug).HasMaxLength(200);
             entity.Property(e => e.SupplierId).HasColumnName("SupplierID");
             entity.Property(e => e.UpdatedBy).HasMaxLength(255);
             entity.Property(e => e.UpdatedDate).HasColumnType("datetime");
@@ -630,6 +639,9 @@ public partial class TomfurnitureContext : DbContext
 
             entity.Property(e => e.CreatedBy).HasMaxLength(255);
             entity.Property(e => e.CreatedDate).HasColumnType("datetime");
+            entity.Property(e => e.ImageUrl)
+                .HasMaxLength(255)
+                .HasColumnName("ImageURL");
             entity.Property(e => e.RoomTypeName).HasMaxLength(100);
             entity.Property(e => e.Slug).HasMaxLength(100);
             entity.Property(e => e.UpdatedBy).HasMaxLength(255);

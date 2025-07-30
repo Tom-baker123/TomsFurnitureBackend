@@ -1,4 +1,4 @@
-﻿using CloudinaryDotNet;
+using CloudinaryDotNet;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using StoreLinhKien.Services;
@@ -26,6 +26,8 @@ builder.Services.AddDbContext<TomfurnitureContext>(options =>
 
 //3. Services
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IRoomTypeService, RoomTypeService>();
+builder.Services.AddScoped<ITestService, TestService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IOrderStatusService, OrderStatusService>();
 builder.Services.AddScoped<IOrderAddressService, OrderAddressService>();

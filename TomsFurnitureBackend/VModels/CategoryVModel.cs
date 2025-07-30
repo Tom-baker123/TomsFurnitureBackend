@@ -4,7 +4,9 @@
     public class CategoryCreateVModel
     {
         public string? CategoryName { get; set; }
-        public string? Descriptions { get; set; } 
+        public string? Descriptions { get; set; }
+        public int? ParentId { get; set; }
+        public int? RoomTypeId { get; set; }
     }
 
     // UpdateVModel - CreateVModel: ViewModel để cập nhật danh mục sản phẩm, kế thừa từ CreateVModel và thêm Id
@@ -22,6 +24,7 @@
         public DateTime? UpdatedDate { get; set; }
         public string? CreatedBy { get; set; }
         public string? UpdatedBy { get; set; }
+        public string? RoomTypeName { get; set; } // Optional: for display
     }
 }
 

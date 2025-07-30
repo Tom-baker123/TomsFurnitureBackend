@@ -57,6 +57,7 @@ namespace TomsFurnitureBackend.VModels
             public string? CategoryName { get; set; }
             public string? CountryName { get; set; }
             public string? SupplierName { get; set; }
+            public string? Slug { get; set; }
             public new List<ProductVariantGetVModel> ProductVariants { get; set; } = new List<ProductVariantGetVModel>();
             public List<SliderGetVModel> Sliders { get; set; } = new List<SliderGetVModel>();
         }

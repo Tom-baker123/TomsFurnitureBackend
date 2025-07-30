@@ -31,17 +31,20 @@ namespace TomsFurnitureBackend.Services
             if (string.IsNullOrWhiteSpace(model.CategoryName)) {
                 return "Category name is required.";
             }
-            
             // Kiểm tra độ dải tên danh mục (tối đa 50 ký tự)
             if (model.CategoryName.Length > 50) {
                 return "CategoryName must be less than 50 characters.";
             }
-
             // Kiểm tra mô tả không được quá 255 ký tự
             if (model.Descriptions != null && model.Descriptions.Length > 255) {
                 return "Descriptions must be less than 255 characters.";
             }
-
+            // Validation: Không cho phép ParentId trùng với Id (khi tạo mới, Id chưa có, nên không cần check)
+            // Nhưng nếu ParentId có giá trị, không cho phép ParentId = 0
+            if (model.ParentId.HasValue && model.ParentId.Value == 0)
+            {
+                return "ParentId must be greater than 0 or null.";
+            }
             return string.Empty; // Trả về chuỗi rỗng nếu không có lỗi
         }
         // ----- [Validation phương thức tạo mới danh mục] -------------------------
@@ -51,25 +54,31 @@ namespace TomsFurnitureBackend.Services
             if (model.Id <= 0) {
                 return "Id must be greater than 0.";
             }
-
             // Kiem tra tên danh mục không được để trống
             if (string.IsNullOrWhiteSpace(model.CategoryName)) {
                 return "Category name is required.";
             }
-
             // Kiểm tra độ dài tên danh mục (tối đa 50 ký tự)
             if (model.CategoryName.Length > 50) {
                 return "CategoryName must be less than 50 characters.";
             }
-
             // Kiểm tra mô tả không được quá 255 ký tự
             if (model.Descriptions?.Length > 255) {
                 return "Descriptions must be less than 255 characters.";
             }
-            
             if (model.IsActive == null)
             {
                 return "IsActive must be true or false.";
+            }
+            // Validation: Không cho phép ParentId trùng với Id trên cùng một bản ghi
+            if (model.ParentId.HasValue && model.ParentId.Value == model.Id)
+            {
+                return "ParentId cannot be the same as Id (a category cannot be its own parent).";
+            }
+            // Không cho phép ParentId = 0
+            if (model.ParentId.HasValue && model.ParentId.Value == 0)
+            {
+                return "ParentId must be greater than 0 or null.";
             }
             // Kiểm tra tên danh mục không được để trống
             return string.Empty;
@@ -144,6 +153,7 @@ namespace TomsFurnitureBackend.Services
         {
             // Lấy tất cả danh mục từ database và chuyển thành ViewModel
             var categories = await _context.Categories
+                .Include(c => c.RoomType)
                 .OrderBy(c => c.Id).ToListAsync(); // Sắp xếp theo Id danh mục
             return categories.Select(c => c.ToGetVModel()).ToList();
         }
@@ -153,6 +163,7 @@ namespace TomsFurnitureBackend.Services
         {
             // Tìm danh mục theo Id
             var category = await _context.Categories
+                .Include(c => c.RoomType)
                 .FirstOrDefaultAsync(c => c.Id == id);
             return category?.ToGetVModel(); // Chuyển đổi sang ViewModel nếu tìm thấy
         }
