@@ -21,5 +21,7 @@ public partial class RoomType
 
     public string? UpdatedBy { get; set; }
 
+    public string? ImageUrl { get; set; }
+
     public virtual ICollection<Category> Categories { get; set; } = new List<Category>();
 }

@@ -31,6 +31,8 @@ public partial class Product
 
     public int? SupplierId { get; set; }
 
+    public string? Slug { get; set; }
+
     public virtual Brand? Brand { get; set; }
 
     public virtual Category? Category { get; set; }

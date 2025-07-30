@@ -47,6 +47,8 @@ public partial class Order
 
     public string PaymentStatus { get; set; } = null!;
 
+    public string? OrderCode { get; set; }
+
     public virtual OrderAddress? OrderAdd { get; set; }
 
     public virtual ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();

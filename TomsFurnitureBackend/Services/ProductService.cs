@@ -8,6 +8,7 @@ using TomsFurnitureBackend.Services.IServices;
 using TomsFurnitureBackend.VModels;
 using TomsFurnitureBackend.Mappings;
 using static TomsFurnitureBackend.VModels.ProductVModel;
+using TomsFurnitureBackend.Helpers;
 
 namespace TomsFurnitureBackend.Services
 {
@@ -232,8 +233,15 @@ namespace TomsFurnitureBackend.Services
                     return validationResult;
                 }
 
+                // Sinh slug duy nhất cho sản phẩm
+                var slug = await SlugHelper.GenerateUniqueSlugAsync(
+                    model.ProductName,
+                    async (s) => await _context.Products.AnyAsync(p => p.Slug == s)
+                );
+
                 // Chuyển đổi từ ViewModel sang Entity
                 var product = model.ToEntity();
+                product.Slug = slug;
 
                 // Thêm Product vào DbContext
                 _context.Products.Add(product);
@@ -728,29 +736,14 @@ namespace TomsFurnitureBackend.Services
                     return new ErrorResponseResult($"Product with ID {model.Id} not found.");
                 }
 
-                // Kiểm tra ràng buộc trước khi xóa hoặc cập nhật biến thể
-                var variantIdsToRemove = product.ProductVariants
-                    .Select(pv => pv.Id)
-                    .Except(model.ProductVariants.Where(v => (v.Id ?? 0) > 0).Select(v => v.Id ?? 0))
-                    .ToList();
-                if (variantIdsToRemove.Any())
-                {
-                    var hasOrderDetails = await _context.OrderDetails
-                        .AnyAsync(od => od.ProVarId.HasValue && variantIdsToRemove.Contains(od.ProVarId.Value));
-                    if (hasOrderDetails)
-                    {
-                        return new ErrorResponseResult("Cannot delete product variants because they are used in orders.");
-                    }
-
-                    var hasCarts = await _context.Carts
-                        .AnyAsync(c => variantIdsToRemove.Contains(c.ProVarId));
-                    if (hasCarts)
-                    {
-                        return new ErrorResponseResult("Cannot delete product variants because they are referenced in the cart table.");
-                    }
-                }
+                // Sinh slug duy nhất cho sản phẩm khi cập nhật
+                var slug = await SlugHelper.GenerateUniqueSlugAsync(
+                    model.ProductName,
+                    async (s) => await _context.Products.AnyAsync(p => p.Slug == s && p.Id != model.Id)
+                );
 
                 // Cập nhật sản phẩm và biến thể
+                product.Slug = slug;
                 product.UpdateEntity(model, _context);
                 await _context.SaveChangesAsync();
 

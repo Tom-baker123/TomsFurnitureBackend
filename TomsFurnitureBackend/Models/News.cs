@@ -25,5 +25,7 @@ public partial class News
 
     public int? UserId { get; set; }
 
+    public string? Slug { get; set; }
+
     public virtual User? User { get; set; }
 }

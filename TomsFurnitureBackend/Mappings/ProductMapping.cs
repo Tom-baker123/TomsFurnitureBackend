@@ -9,7 +9,7 @@ namespace TomsFurnitureBackend.Extensions
     public static class ProductMapping
     {
         // Chuyển từ ProductCreateVModel sang Entity Product
-        public static Product ToEntity(this ProductCreateVModel model)
+        public static Product ToEntity(this ProductCreateVModel model, string? slug = null)
         {
             var product = new Product
             {
@@ -22,7 +22,8 @@ namespace TomsFurnitureBackend.Extensions
                 IsActive = true,
                 CreatedDate = DateTime.UtcNow,
                 ViewCount = 0,
-                ProductVariants = model.ProductVariants.Select(pv => pv.ToEntity()).ToList()
+                ProductVariants = model.ProductVariants.Select(pv => pv.ToEntity()).ToList(),
+                Slug = slug
             };
             return product;
         }
@@ -64,7 +65,7 @@ namespace TomsFurnitureBackend.Extensions
         }
 
         // Cập nhật Entity Product từ ProductUpdateVModel, bao gồm xử lý biến thể
-        public static void UpdateEntity(this Product entity, ProductUpdateVModel model, TomfurnitureContext context)
+        public static void UpdateEntity(this Product entity, ProductUpdateVModel model, TomfurnitureContext context, string? slug = null)
         {
             // Cập nhật thông tin sản phẩm chính
             entity.ProductName = model.ProductName;
@@ -75,6 +76,8 @@ namespace TomsFurnitureBackend.Extensions
             entity.SupplierId = model.SupplierId;
             entity.IsActive = model.IsActive ?? entity.IsActive;
             entity.UpdatedDate = DateTime.UtcNow;
+            if (!string.IsNullOrEmpty(slug))
+                entity.Slug = slug;
 
             // Xử lý các biến thể
             var existingVariantIds = entity.ProductVariants.Select(pv => pv.Id).ToList();
@@ -124,6 +127,7 @@ namespace TomsFurnitureBackend.Extensions
                 CategoryName = entity.Category?.CategoryName,
                 CountryName = entity.Countries?.CountryName,
                 SupplierName = entity.Supplier?.SupplierName,
+                Slug = entity.Slug,
                 ProductVariants = entity.ProductVariants?.Select(pv => new ProductVModel.ProductVariantGetVModel
                 {
                     Id = pv.Id,
