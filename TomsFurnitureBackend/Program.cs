@@ -27,7 +27,6 @@ builder.Services.AddDbContext<TomfurnitureContext>(options =>
 //3. Services
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IRoomTypeService, RoomTypeService>();
-builder.Services.AddScoped<ITestService, TestService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IOrderStatusService, OrderStatusService>();
 builder.Services.AddScoped<IOrderAddressService, OrderAddressService>();
@@ -55,6 +54,7 @@ builder.Services.AddScoped<IUnitService, UnitService>();
 builder.Services.AddScoped<ISliderService, SliderService>();
 builder.Services.AddScoped<IProductVariantImageService, ProductVariantImageService>();
 builder.Services.AddScoped<IVnPayService, VnPayService>();
+builder.Services.AddScoped<ITestService, TestService>();
 builder.Services.AddControllers();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -82,8 +82,8 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.AccessDeniedPath = "/api/auth/accessdenied";
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.None;
-        // options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
-        options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Chỉ dùng khi đưa lên hosting
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        // options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Chỉ dùng khi đưa lên hosting
         options.ExpireTimeSpan = TimeSpan.FromDays(7);
         options.SlidingExpiration = true;
     });
