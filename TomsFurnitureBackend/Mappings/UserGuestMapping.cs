@@ -8,27 +8,27 @@ namespace TomsFurnitureBackend.Mappings
 {
     public static class UserGuestMapping
     {
-        //public static UserGuestGetVModel ToGetVModel(this UserGuest x)
-        //{
-        //    return new UserGuestGetVModel
-        //    {
-        //        Id = x.Id,
-        //        FullName = x.FullName,
-        //        PhoneNumber = x.PhoneNumber,
-        //        Email = x.Email,
-        //        DetailAddress = x.DetailAddress,
-        //        City = x.City,
-        //        District = x.District,
-        //        Ward = x.Ward,
-        //        CreatedDate = x.CreatedDate,
-        //        IsActive = true // Không có tr??ng IsActive, m?c ??nh true
-        //    };
-        //}
+        public static UserGuestGetVModel ToGetVModel(this UserGuest x)
+        {
+            return new UserGuestGetVModel
+            {
+                Id = x.Id,
+                FullName = x.FullName,
+                PhoneNumber = x.PhoneNumber,
+                Email = x.Email,
+                DetailAddress = x.DetailAddress,
+                City = x.City,
+                District = x.District,
+                Ward = x.Ward,
+                CreatedDate = x.CreatedDate,
+                IsActive = true // Không có tr??ng IsActive, m?c ??nh true
+            };
+        }
 
-        //public static List<UserGuestGetVModel> ToGetVModelList(this IEnumerable<UserGuest> list)
-        //{
-        //    return list.Select(x => x.ToGetVModel()).ToList();
-        //}
+        public static List<UserGuestGetVModel> ToGetVModelList(this IEnumerable<UserGuest> list)
+        {
+            return list.Select(x => x.ToGetVModel()).ToList();
+        }
 
         // Mapping cho Create
         public static UserGuest ToEntity(this UserGuestCreateVModel model)

@@ -85,17 +85,17 @@ namespace TomsFurnitureBackend.Services
         //    return result;
         //}
 
-        //public async Task<List<UserGuestGetVModel>> GetAllAsync()
-        //{
-        //    var guests = await _context.UserGuests.Where(x => x.CreatedDate != null).ToListAsync();
-        //    return guests.ToGetVModelList();
-        //}
+        public async Task<List<UserGuestGetVModel>> GetAllAsync()
+        {
+            var guests = await _context.UserGuests.Where(x => x.CreatedDate != null).ToListAsync();
+            return guests.ToGetVModelList();
+        }
 
-        //public async Task<UserGuestGetVModel?> GetByIdAsync(int id)
-        //{
-        //    var x = await _context.UserGuests.FirstOrDefaultAsync(x => x.Id == id);
-        //    return x?.ToGetVModel();
-        //}
+        public async Task<UserGuestGetVModel?> GetByIdAsync(int id)
+        {
+            var x = await _context.UserGuests.FirstOrDefaultAsync(x => x.Id == id);
+            return x?.ToGetVModel();
+        }
 
         //public async Task<ResponseResult> DeleteAsync(int id)
         //{

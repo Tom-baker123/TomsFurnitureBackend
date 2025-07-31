@@ -25,31 +25,22 @@ namespace TomsFurnitureBackend.Controllers
             return Ok(result);
         }
 
-        //[HttpPut]
-        //[AllowAnonymous]
-        //public async Task<IActionResult> Update([FromBody] UserGuestUpdateVModel model)
-        //{
-        //    var result = await _service.UpdateAsync(model);
-        //    if (!result.IsSuccess) return BadRequest(result);
-        //    return Ok(result);
-        //}
+        [HttpGet]
+        [Authorize]
+        public async Task<IActionResult> GetAll()
+        {
+            var result = await _service.GetAllAsync();
+            return Ok(result);
+        }
 
-        //[HttpGet]
-        //[Authorize]
-        //public async Task<IActionResult> GetAll()
-        //{
-        //    var result = await _service.GetAllAsync();
-        //    return Ok(result);
-        //}
-
-        //[HttpGet("{id}")]
-        //[AllowAnonymous]
-        //public async Task<IActionResult> GetById(int id)
-        //{
-        //    var result = await _service.GetByIdAsync(id);
-        //    if (result == null) return NotFound();
-        //    return Ok(result);
-        //}
+        [HttpGet("{id}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetById(int id)
+        {
+            var result = await _service.GetByIdAsync(id);
+            if (result == null) return NotFound();
+            return Ok(result);
+        }
 
         //[HttpDelete("{id}")]
         //[Authorize]
