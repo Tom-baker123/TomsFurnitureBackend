@@ -13,14 +13,14 @@ namespace TomsFurnitureBackend.VModels
         public string? Ward { get; set; }
     }
 
-    //public class UserGuestUpdateVModel : UserGuestCreateVModel
-    //{
-    //    public int Id { get; set; }
-    //}
+    public class UserGuestUpdateVModel : UserGuestCreateVModel
+    {
+        public int Id { get; set; }
+    }
 
-    //public class UserGuestGetVModel : UserGuestUpdateVModel
-    //{
-    //    public DateTime? CreatedDate { get; set; }
-    //    public bool? IsActive { get; set; }
-    //}
+    public class UserGuestGetVModel : UserGuestUpdateVModel
+    {
+        public DateTime? CreatedDate { get; set; }
+        public bool? IsActive { get; set; }
+    }
 }

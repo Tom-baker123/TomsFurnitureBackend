@@ -60,6 +60,18 @@ namespace TomsFurnitureBackend.Services
             return string.Empty;
         }
 
+        // Sinh mã OrderCode duy nhất cho đơn hàng
+        private async Task<string> GenerateUniqueOrderCodeAsync()
+        {
+            string code;
+            var random = new Random();
+            do
+            {
+                code = $"OD{DateTime.UtcNow:yyyyMMddHHmmss}{random.Next(1000, 9999)}";
+            } while (await _context.Orders.AnyAsync(o => o.OrderCode == code));
+            return code;
+        }
+
         public async Task<ResponseResult> ProcessPaymentAsync(OrderCreateVModel model, ClaimsPrincipal user, HttpContext httpContext)
         {
             // Bước 1: Kiểm tra trạng thái đăng nhập
@@ -134,6 +146,10 @@ namespace TomsFurnitureBackend.Services
 
             // Bước 4: Chuyển dữ liệu từ ViewModel sang Entity
             var order = model.ToEntity();
+
+            // Bổ sung: Sinh OrderCode duy nhất và gán OrderDate
+            order.OrderDate = DateTime.UtcNow;
+            order.OrderCode = await GenerateUniqueOrderCodeAsync();
 
             // Bước 5: Nếu là user đã đăng nhập thì gán UserId cho đơn hàng
             int? userIdForCart = null;
