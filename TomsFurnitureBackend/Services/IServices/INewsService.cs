@@ -1,21 +1,17 @@
-﻿using OA.Domain.Common.Models;
-using TomsFurnitureBackend.VModels;
-using System.Threading.Tasks;
+﻿using Microsoft.AspNetCore.Http;
+using OA.Domain.Common.Models;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using TomsFurnitureBackend.VModels;
 
 namespace TomsFurnitureBackend.Services.IServices
 {
     public interface INewsService
     {
-        // Lấy danh sách tất cả tin tức
         Task<List<NewsGetVModel>> GetAllAsync();
-        // Lấy tin tức theo ID
         Task<NewsGetVModel?> GetByIdAsync(int id);
-        // Tạo tin tức mới
-        Task<ResponseResult> CreateAsync(NewsCreateVModel model, string? newsAvatar, string createdBy);
-        // Cập nhật tin tức
-        Task<ResponseResult> UpdateAsync(NewsUpdateVModel model, string? newsAvatar, string updatedBy);
-        // Xóa tin tức
+        Task<ResponseResult> CreateAsync(NewsCreateVModel model, IFormFile? imageFile, HttpContext httpContext);
+        Task<ResponseResult> UpdateAsync(NewsUpdateVModel model, IFormFile? imageFile, HttpContext httpContext);
         Task<ResponseResult> DeleteAsync(int id);
     }
 }

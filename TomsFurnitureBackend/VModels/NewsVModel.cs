@@ -9,8 +9,6 @@ namespace TomsFurnitureBackend.VModels
         public string Title { get; set; } = null!;
         // Nội dung tin tức
         public string? Content { get; set; }
-        // ID người tạo tin tức
-        public int? UserId { get; set; }
     }
 
     // ViewModel để cập nhật tin tức

@@ -304,6 +304,18 @@ namespace TomsFurnitureBackend.Services
                     return new ErrorResponseResult("Cannot delete product because it is referenced in the ProductReviews table.");
                 }
 
+                // Xóa các ProductVariantImage liên quan đến các ProductVariant của sản phẩm
+                if (variantIds.Any())
+                {
+                    var variantImages = await _context.ProductVariantImages
+                        .Where(img => img.ProVarId.HasValue && variantIds.Contains(img.ProVarId.Value))
+                        .ToListAsync();
+                    if (variantImages.Any())
+                    {
+                        _context.ProductVariantImages.RemoveRange(variantImages);
+                    }
+                }
+
                 // Xóa các Slider liên quan
                 if (product.Sliders.Any())
                 {

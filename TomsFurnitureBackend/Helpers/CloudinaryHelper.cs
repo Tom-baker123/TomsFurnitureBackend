@@ -36,5 +36,28 @@ namespace TomsFurnitureBackend.Helpers
 
             return uploadResult.SecureUrl.AbsoluteUri;
         }
+
+        // Hàm trích xuất publicId từ URL Cloudinary
+        public static string? ExtractPublicIdFromUrl(string url)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(url))
+                    return null;
+                var uri = new Uri(url);
+                var path = uri.AbsolutePath;
+                var segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
+                if (segments.Length >= 2)
+                {
+                    var lastSegment = segments[^1];
+                    return Path.GetFileNameWithoutExtension(lastSegment);
+                }
+                return null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
     }
 }
