@@ -43,10 +43,6 @@ namespace TomsFurnitureBackend.Services
             {
                 return "Tiêu đề tin tức không được dài quá 200 ký tự.";
             }
-            if (!string.IsNullOrWhiteSpace(model.Content) && model.Content.Length > 5000)
-            {
-                return "Nội dung tin tức không được dài quá 5000 ký tự.";
-            }
             return string.Empty;
         }
 
@@ -64,10 +60,6 @@ namespace TomsFurnitureBackend.Services
             if (model.Title.Length > 200)
             {
                 return "Tiêu đề tin tức không được dài quá 200 ký tự.";
-            }
-            if (!string.IsNullOrWhiteSpace(model.Content) && model.Content.Length > 5000)
-            {
-                return "Nội dung tin tức không được dài quá 5000 ký tự.";
             }
             return string.Empty;
         }

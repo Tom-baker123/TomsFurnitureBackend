@@ -80,6 +80,7 @@ namespace TomsFurnitureBackend.Services
             if (paymentResult.Success && paymentResult.VnPayResponseCode == "00")
             {
                 order.PaymentStatus = PaymentStatus.Paid;
+                order.IsPaid = true; // Đánh dấu đã thanh toán thành công qua VNPAY
                 // Gửi email xác nhận thanh toán thành công qua VNPAY
                 string? toEmail = null;
                 if (order.User != null)
@@ -97,9 +98,15 @@ namespace TomsFurnitureBackend.Services
                 }
             }
             else if (paymentResult.VnPayResponseCode == "24")
+            {
                 order.PaymentStatus = PaymentStatus.Cancelled;
+                order.IsPaid = false;
+            }
             else
+            {
                 order.PaymentStatus = PaymentStatus.Failed;
+                order.IsPaid = false;
+            }
 
             await _context.SaveChangesAsync();
             return true;

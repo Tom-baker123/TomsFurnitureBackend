@@ -206,14 +206,34 @@ namespace TomsFurnitureBackend.Services
                 var user = await _context.Users
                     .Include(u => u.Role)
                     .FirstOrDefaultAsync(u => u.Email.ToLower() == model.Email.ToLower());
-                if (user == null || !user.IsActive.GetValueOrDefault())
+                if (user == null)
                 {
                     return new ErrorResponseResult("Invalid email or account not activated.");
                 }
+
+                // -- Kiểm tra nếu tài khoản đã bị khóa do 3 lần đăng nhập sai
+                if (user.FailedLoginCount >= 3 && user.Role.RoleName == "User")
+                    return new ErrorResponseResult("Tài khoản của bạn đã bị khóa. Hãy liên lạc với chúng tôi sớm nhất có thể để kích hoạt lại tài khoản.");
+
+                if (!user.IsActive.GetValueOrDefault())
+                {
+                    return new ErrorResponseResult("Invalid email or account not activated.");
+                }
+
                 // Bước 3: Kiểm tra mật khẩu
                 if (!BCrypt.Net.BCrypt.Verify(model.Password, user.PasswordHash))
                 {
-                    return new ErrorResponseResult("Invalid password.");
+                    if (user.FailedLoginCount == null)
+                    {
+                        user.FailedLoginCount = 0; // Khởi tạo số lần đăng nhập sai nếu chưa có
+                    }
+                    user.FailedLoginCount++; // Tăng số lần đăng nhập sai
+                    
+                    if (user.FailedLoginCount >= 3 && user.Role.RoleName == "User")
+                        user.IsActive = false; // Vô hiệu hóa tài khoản nếu đăng nhập sai quá 3 lần
+                    await _context.SaveChangesAsync(); // Lưu thay đổi số lần đăng nhập sai
+                    return new ErrorResponseResult(user.IsActive == false ? "Tài khoản của bạn đã bị khóa. Hãy liên lạc với chúng tôi sớm nhất có thể để kích hoạt lại tài khoản."
+                        : "Bạn nhập sai mật khẩu.");
                 }
                 // Bước 4: Tạo claims cho xác thực
                 var claims = new List<Claim>
@@ -416,6 +436,7 @@ namespace TomsFurnitureBackend.Services
                 }
                 // Bước 9: Kích hoạt tài khoản và xóa OTP
                 user.IsActive = true;
+                user.FailedLoginCount = 0; // Reset số lần đăng nhập thất bại
                 user.UpdatedDate = DateTime.UtcNow;
                 user.UpdatedBy = "System";
                 _context.ConfirmOtps.Remove(otpData);
@@ -760,6 +781,7 @@ namespace TomsFurnitureBackend.Services
                 // Bước 5: Cập nhật mật khẩu và kích hoạt tài khoản
                 user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.NewPassword);
                 user.IsActive = true;
+                user.FailedLoginCount = 0; // Reset số lần đăng nhập thất bại
                 user.UpdatedDate = DateTime.UtcNow;
                 user.UpdatedBy = "System";
                 // Bước 6: Xóa OTP nếu có
@@ -851,8 +873,15 @@ namespace TomsFurnitureBackend.Services
                 {
                     return new ErrorResponseResult("Role not found.");
                 }
+                
                 // Bước 7: Cập nhật thông tin người dùng
                 user.UpdateUserEntity(model);
+
+                if (model.IsActive == true && user.FailedLoginCount > 0)
+                {
+                    user.FailedLoginCount = 0; // Reset số lần đăng nhập thất bại nếu kích hoạt tài khoản
+                }
+                
                 await _context.SaveChangesAsync();
                 // Bước 8: Trả về kết quả thành công
                 return new SuccessResponseResult(user.ToUserVModel(), "User updated successfully.");

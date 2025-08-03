@@ -38,6 +38,17 @@ namespace TomsFurnitureBackend.VModels
             public List<ProductVariantCreateVModel> ProductVariants { get; set; } = new List<ProductVariantCreateVModel>();
         }
 
+        // Thêm VModel mới để trả về khi tạo sản phẩm thành công
+        public class ProductCreateResponseVModel
+        {
+            public int ProductId { get; set; }
+            public string ProductName { get; set; } = null!;
+            public string? Slug { get; set; }
+            public List<int> VariantIds { get; set; } = new List<int>();
+            public int TotalVariants { get; set; }
+            public DateTime CreatedDate { get; set; }
+        }
+
         public class ProductUpdateVModel : ProductCreateVModel
         {
             public bool? IsActive { get; set; }

@@ -50,7 +50,7 @@ namespace TomsFurnitureBackend.Controllers
                     return BadRequest(new { Message = result.Message });
                 }
 
-                // Trả về kết quả thành công với ID sản phẩm
+                // Trả về kết quả thành công với thông tin tóm tắt
                 var successResult = result as SuccessResponseResult;
                 if (successResult == null)
                 {
@@ -62,10 +62,18 @@ namespace TomsFurnitureBackend.Controllers
                     _logger.LogWarning("SuccessResponseResult.Data is null when creating product.");
                     return StatusCode(500, new { Message = "Unexpected error occurred while creating the product." });
                 }
-                return CreatedAtAction(nameof(GetById), new { id = successResult.Data.Id }, new
+
+                var createResponse = successResult.Data as ProductVModel.ProductCreateResponseVModel;
+                if (createResponse == null)
+                {
+                    _logger.LogWarning("SuccessResponseResult.Data is not ProductCreateResponseVModel when creating product.");
+                    return StatusCode(500, new { Message = "Unexpected error occurred while creating the product." });
+                }
+
+                return CreatedAtAction(nameof(GetById), new { id = createResponse.ProductId }, new
                 {
                     Message = successResult.Message,
-                    ProductId = successResult.Data.Id
+                    Data = createResponse
                 });
             }
             catch (Exception ex)
