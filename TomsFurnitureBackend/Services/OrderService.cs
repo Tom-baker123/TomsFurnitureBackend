@@ -216,15 +216,16 @@ namespace TomsFurnitureBackend.Services
 
             // Bước 9: Gán trạng thái đơn hàng ban đầu
             order.OrderStaId = 1; // "Pending Confirmation"
-            // order.IsPaid = true;
             // Xử lý trạng thái thanh toán theo phương thức
             if (order.PaymentMethodId == 1) // COD
             {
                 order.PaymentStatus = PaymentStatus.Unpaid;
+                order.IsPaid = false; // Đánh dấu đã thanh toán thành công cho COD
             }
             else // VNPAY hoặc các phương thức khác
             {
                 order.PaymentStatus = PaymentStatus.Processing;
+                order.IsPaid = false; // Chưa thanh toán với VNPAY hoặc phương thức khác
             }
 
             // Bước 10: Gán lại PromotionId nếu không có khuyến mãi

@@ -30,7 +30,8 @@ namespace TomsFurnitureBackend.Extensions
                 IsActive = false, // Mặc định false, cần xác thực OTP
                 CreatedDate = DateTime.UtcNow,
                 CreatedBy = "System",
-                RoleId = roleId
+                RoleId = roleId,
+                FailedLoginCount = 0 // Khởi tạo số lần đăng nhập thất bại bằng 0
             };
         }
 
@@ -178,7 +179,8 @@ namespace TomsFurnitureBackend.Extensions
                 IsActive = model.IsActive,
                 CreatedDate = DateTime.UtcNow,
                 CreatedBy = "Admin",
-                RoleId = model.RoleId
+                RoleId = model.RoleId,
+                FailedLoginCount = 0 // Khởi tạo số lần đăng nhập thất bại bằng 0
             };
         }
 

@@ -31,6 +31,8 @@ public partial class User
 
     public int RoleId { get; set; }
 
+    public int? FailedLoginCount { get; set; }
+
     public virtual ICollection<Banner> Banners { get; set; } = new List<Banner>();
 
     public virtual ICollection<Cart> Carts { get; set; } = new List<Cart>();

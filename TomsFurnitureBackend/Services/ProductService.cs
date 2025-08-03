@@ -247,9 +247,18 @@ namespace TomsFurnitureBackend.Services
                 _context.Products.Add(product);
                 await _context.SaveChangesAsync();
 
-                // Lấy dữ liệu mới nhất để trả về
-                var productVm = await GetByIdAsync(product.Id);
-                return new SuccessResponseResult(productVm, "Product and its variants created successfully.");
+                // Tạo response với thông tin tóm tắt bao gồm danh sách ID biến thể
+                var createResponse = new ProductVModel.ProductCreateResponseVModel
+                {
+                    ProductId = product.Id,
+                    ProductName = product.ProductName,
+                    Slug = product.Slug,
+                    VariantIds = product.ProductVariants.Select(pv => pv.Id).ToList(),
+                    TotalVariants = product.ProductVariants.Count,
+                    CreatedDate = product.CreatedDate ?? DateTime.UtcNow
+                };
+
+                return new SuccessResponseResult(createResponse, "Product and its variants created successfully.");
             }
             catch (DbUpdateException dbEx)
             {
