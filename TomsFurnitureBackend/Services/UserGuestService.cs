@@ -8,6 +8,7 @@ using TomsFurnitureBackend.Services.IServices;
 using TomsFurnitureBackend.VModels;
 using OA.Domain.Common.Models;
 using TomsFurnitureBackend.Mappings;
+using TomsFurnitureBackend.Helpers;
 
 namespace TomsFurnitureBackend.Services
 {
@@ -20,11 +21,19 @@ namespace TomsFurnitureBackend.Services
         }
 
         // Hàm validation chung cho UserGuest
-        private static string ValidateUserGuest(string fullName, string phoneNumber, string detailAddress, string? email = null)
+        private static string ValidateUserGuest(string fullName, string phoneNumber, string detailAddress, out string normalizedPhone, string? email = null)
         {
+            normalizedPhone = phoneNumber;
+            
             if (string.IsNullOrWhiteSpace(fullName) || string.IsNullOrWhiteSpace(phoneNumber) || string.IsNullOrWhiteSpace(detailAddress))
                 return "Full name, phone number, and address are required.";
-            // Ki?m tra ??nh d?ng email n?u có
+            
+            // Validate và chuẩn hóa số điện thoại bắt buộc
+            var phoneValidation = PhoneNumberHelper.ValidateRequiredPhoneNumber(phoneNumber, out normalizedPhone);
+            if (!string.IsNullOrEmpty(phoneValidation))
+                return phoneValidation;
+
+            // Kiểm tra định dạng email nếu có
             if (!string.IsNullOrWhiteSpace(email))
             {
                 var emailRegex = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
@@ -37,10 +46,14 @@ namespace TomsFurnitureBackend.Services
         public async Task<ResponseResult> CreateAsync(UserGuestCreateVModel model)
         {
             // Validation chung
-            var validationResult = ValidateUserGuest(model.FullName, model.PhoneNumber, model.DetailAddress, model.Email);
+            var validationResult = ValidateUserGuest(model.FullName, model.PhoneNumber, model.DetailAddress, out string normalizedPhone, model.Email);
             if (!string.IsNullOrEmpty(validationResult))
                 return new ErrorResponseResult(validationResult);
-            // Validation: ch? ki?m tra trùng email (n?u có)
+            
+            // Cập nhật số điện thoại đã chuẩn hóa
+            model.PhoneNumber = normalizedPhone;
+            
+            // Validation: chỉ kiểm tra trùng email (nếu có)
             if (!string.IsNullOrEmpty(model.Email))
             {
                 var existEmail = await _context.UserGuests.AnyAsync(x => x.Email == model.Email);
@@ -50,7 +63,7 @@ namespace TomsFurnitureBackend.Services
             var guest = model.ToEntity();
             _context.UserGuests.Add(guest);
             await _context.SaveChangesAsync();
-            // Trả về root response
+            // Trả về root response
             var result = new SuccessResponseResult();
             result.Id = guest.Id;
             result.IsSuccess = true;
@@ -61,12 +74,16 @@ namespace TomsFurnitureBackend.Services
         //public async Task<ResponseResult> UpdateAsync(UserGuestUpdateVModel model)
         //{
         //    // Validation chung
-        //    var validationResult = ValidateUserGuest(model.FullName, model.PhoneNumber, model.DetailAddress, model.Email);
+        //    var validationResult = ValidateUserGuest(model.FullName, model.PhoneNumber, model.DetailAddress, out string normalizedPhone, model.Email);
         //    if (!string.IsNullOrEmpty(validationResult))
         //        return new ErrorResponseResult(validationResult);
+        //    
+        //    // Cập nhật số điện thoại đã chuẩn hóa
+        //    model.PhoneNumber = normalizedPhone;
+        //    
         //    var guest = await _context.UserGuests.FirstOrDefaultAsync(x => x.Id == model.Id);
         //    if (guest == null) return new ErrorResponseResult("Guest not found.");
-        //    // Validation: ch? ki?m tra trùng email (n?u có) v?i khách khác
+        //    // Validation: chỉ kiểm tra trùng email (nếu có) với khách khác
         //    if (!string.IsNullOrEmpty(model.Email))
         //    {
         //        var existEmail = await _context.UserGuests.AnyAsync(x => x.Id != model.Id && x.Email == model.Email);
@@ -76,7 +93,7 @@ namespace TomsFurnitureBackend.Services
         //    model.UpdateEntity(guest);
         //    await _context.SaveChangesAsync();
 
-        //    // Trả về root response
+        //    // Trả về root response
         //    var result = new SuccessResponseResult();
         //    result.Id = guest.Id;
         //    result.IsSuccess = true;
@@ -106,12 +123,16 @@ namespace TomsFurnitureBackend.Services
         //    return new SuccessResponseResult(null, "Guest deleted successfully.");
         //}
 
-        //// Tìm ki?m khách vãng lai theo s? ?i?n tho?i ho?c email
+        //// Tìm kiếm khách vãng lai theo số điện thoại hoặc email
         //public async Task<UserGuestGetVModel?> FindByPhoneOrEmailAsync(string? phone, string? email)
         //{
         //    var query = _context.UserGuests.AsQueryable();
         //    if (!string.IsNullOrWhiteSpace(phone))
-        //        query = query.Where(x => x.PhoneNumber == phone);
+        //    {
+        //        // Chuẩn hóa số điện thoại trước khi tìm kiếm
+        //        var normalizedPhone = PhoneNumberHelper.NormalizePhoneNumber(phone);
+        //        query = query.Where(x => x.PhoneNumber == normalizedPhone);
+        //    }
         //    if (!string.IsNullOrWhiteSpace(email))
         //        query = query.Where(x => x.Email == email);
         //    var guest = await query.FirstOrDefaultAsync();
