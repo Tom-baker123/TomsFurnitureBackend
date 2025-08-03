@@ -11,6 +11,7 @@ using System.Security.Claims;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using TomsFurnitureBackend.Extensions;
+using TomsFurnitureBackend.Helpers;
 using TomsFurnitureBackend.Models;
 using TomsFurnitureBackend.Services.Interfaces;
 using TomsFurnitureBackend.Services.IServices;
@@ -83,6 +84,18 @@ namespace TomsFurnitureBackend.Services
             {
                 return "Password must be at least 6 characters long.";
             }
+
+            // Kiểm tra và chuẩn hóa số điện thoại nếu có
+            if (!string.IsNullOrWhiteSpace(model.PhoneNumber))
+            {
+                var phoneValidation = PhoneNumberHelper.ValidateAndNormalizePhoneNumber(model.PhoneNumber, out string normalizedPhone);
+                if (!string.IsNullOrEmpty(phoneValidation))
+                {
+                    return phoneValidation;
+                }
+                model.PhoneNumber = normalizedPhone; // Cập nhật số điện thoại đã chuẩn hóa
+            }
+
             return string.Empty;
         }
 
@@ -152,7 +165,94 @@ namespace TomsFurnitureBackend.Services
             return string.Empty;
         }
 
-        // Hàm validate thông tin người dùng
+        // Hàm validate thông tin người dùng cho admin
+        private static string ValidateAddUser(AddUserVModel model)
+        {
+            // Kiểm tra tên người dùng có rỗng hoặc null không
+            if (string.IsNullOrWhiteSpace(model.UserName))
+            {
+                return "Username is required.";
+            }
+            // Kiểm tra email có rỗng hoặc null không
+            if (string.IsNullOrWhiteSpace(model.Email))
+            {
+                return "Email is required.";
+            }
+            // Kiểm tra định dạng email bằng regex
+            const string emailRegex = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
+            if (!Regex.IsMatch(model.Email.Trim(), emailRegex))
+            {
+                return "Invalid email format.";
+            }
+            // Kiểm tra mật khẩu
+            if (string.IsNullOrWhiteSpace(model.Password))
+            {
+                return "Password is required.";
+            }
+            if (model.Password.Length < 6)
+            {
+                return "Password must be at least 6 characters long.";
+            }
+            // Kiểm tra ID vai trò hợp lệ
+            if (model.RoleId <= 0)
+            {
+                return "Role is required.";
+            }
+
+            // Kiểm tra và chuẩn hóa số điện thoại nếu có
+            if (!string.IsNullOrWhiteSpace(model.PhoneNumber))
+            {
+                var phoneValidation = PhoneNumberHelper.ValidateAndNormalizePhoneNumber(model.PhoneNumber, out string normalizedPhone);
+                if (!string.IsNullOrEmpty(phoneValidation))
+                {
+                    return phoneValidation;
+                }
+                model.PhoneNumber = normalizedPhone; // Cập nhật số điện thoại đã chuẩn hóa
+            }
+
+            return string.Empty;
+        }
+
+        // Hàm validate thông tin người dùng cho update
+        private static string ValidateUpdateUser(UpdateUserVModel model)
+        {
+            // Kiểm tra tên người dùng có rỗng hoặc null không
+            if (string.IsNullOrWhiteSpace(model.UserName))
+            {
+                return "Username is required.";
+            }
+            // Kiểm tra email có rỗng hoặc null không
+            if (string.IsNullOrWhiteSpace(model.Email))
+            {
+                return "Email is required.";
+            }
+            // Kiểm tra định dạng email bằng regex
+            const string emailRegex = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
+            if (!Regex.IsMatch(model.Email.Trim(), emailRegex))
+            {
+                return "Invalid email format.";
+            }
+            // Kiểm tra ID vai trò hợp lệ
+            if (model.RoleId <= 0)
+            {
+                return "Role is required.";
+            }
+
+            // Kiểm tra và chuẩn hóa số điện thoại nếu có
+            if (!string.IsNullOrWhiteSpace(model.PhoneNumber))
+            {
+                var phoneValidation = PhoneNumberHelper.ValidateAndNormalizePhoneNumber(model.PhoneNumber, out string normalizedPhone);
+                if (!string.IsNullOrEmpty(phoneValidation))
+                {
+                    return phoneValidation;
+                }
+                model.PhoneNumber = normalizedPhone; // Cập nhật số điện thoại đã chuẩn hóa
+            }
+
+            return string.Empty;
+        }
+
+        // Hàm validate thông tin người dùng (deprecated - sẽ được thay thế dần)
         private static string ValidateUser(string userName, string email, int roleId, bool isAdd = false, string? password = null)
         {
             // Kiểm tra tên người dùng có rỗng hoặc null không
@@ -808,7 +908,7 @@ namespace TomsFurnitureBackend.Services
             {
                 // Bước 1: Ghi log bắt đầu thêm người dùng
                 // Bước 2: Validate thông tin người dùng
-                var validationResult = ValidateUser(model.UserName, model.Email, model.RoleId, isAdd: true, model.Password);
+                var validationResult = ValidateAddUser(model);
                 if (!string.IsNullOrEmpty(validationResult))
                 {
                     return new ErrorResponseResult(validationResult);
@@ -825,6 +925,11 @@ namespace TomsFurnitureBackend.Services
                 if (role == null)
                 {
                     return new ErrorResponseResult("Role not found.");
+                }
+                // Bước 5.1: Kiểm tra không cho phép tạo tài khoản admin
+                if (role.RoleName.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+                {
+                    return new ErrorResponseResult("Cannot create admin account through this method.");
                 }
                 // Bước 6: Tạo và lưu người dùng mới
                 var user = model.ToUserEntity();
@@ -847,7 +952,7 @@ namespace TomsFurnitureBackend.Services
             {
                 // Bước 1: Ghi log bắt đầu cập nhật người dùng
                 // Bước 2: Validate thông tin người dùng
-                var validationResult = ValidateUser(model.UserName, model.Email, model.RoleId);
+                var validationResult = ValidateUpdateUser(model);
                 if (!string.IsNullOrEmpty(validationResult))
                 {
                     return new ErrorResponseResult(validationResult);
