@@ -221,11 +221,18 @@ public partial class TomfurnitureContext : DbContext
 
             entity.ToTable("Comment");
 
+            entity.HasIndex(e => e.Email, "UQ__Comment__A9D10534A2464E31").IsUnique();
+
             entity.Property(e => e.CreatedBy).HasMaxLength(255);
             entity.Property(e => e.CreatedDate).HasColumnType("datetime");
+            entity.Property(e => e.Email).HasMaxLength(100);
+            entity.Property(e => e.PhoneNumber)
+                .HasMaxLength(15)
+                .IsUnicode(false);
             entity.Property(e => e.ProReviewId).HasColumnName("ProReviewID");
             entity.Property(e => e.UpdatedBy).HasMaxLength(255);
             entity.Property(e => e.UpdatedDate).HasColumnType("datetime");
+            entity.Property(e => e.UserName).HasMaxLength(100);
 
             entity.HasOne(d => d.ProReview).WithMany(p => p.Comments)
                 .HasForeignKey(d => d.ProReviewId)
@@ -275,13 +282,20 @@ public partial class TomfurnitureContext : DbContext
         {
             entity.HasKey(e => e.Id).HasName("PK__Feedback__3214EC07E6D54238");
 
+            entity.HasIndex(e => e.Email, "UQ__Feedback__A9D105345349C03F").IsUnique();
+
             entity.Property(e => e.CreatedBy).HasMaxLength(255);
             entity.Property(e => e.CreatedDate).HasColumnType("datetime");
+            entity.Property(e => e.Email).HasMaxLength(100);
             entity.Property(e => e.Message).HasMaxLength(255);
             entity.Property(e => e.ParentFeedbackId).HasColumnName("ParentFeedbackID");
+            entity.Property(e => e.PhoneNumber)
+                .HasMaxLength(15)
+                .IsUnicode(false);
             entity.Property(e => e.UpdatedBy).HasMaxLength(255);
             entity.Property(e => e.UpdatedDate).HasColumnType("datetime");
             entity.Property(e => e.UserId).HasColumnName("UserID");
+            entity.Property(e => e.UserName).HasMaxLength(100);
 
             entity.HasOne(d => d.ParentFeedback).WithMany(p => p.InverseParentFeedback)
                 .HasForeignKey(d => d.ParentFeedbackId)

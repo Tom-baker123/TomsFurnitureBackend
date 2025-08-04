@@ -54,12 +54,12 @@ namespace TomsFurnitureBackend.Services
             model.PhoneNumber = normalizedPhone;
             
             // Validation: chỉ kiểm tra trùng email (nếu có)
-            if (!string.IsNullOrEmpty(model.Email))
-            {
-                var existEmail = await _context.UserGuests.AnyAsync(x => x.Email == model.Email);
-                if (existEmail)
-                    return new ErrorResponseResult("Email already exists.");
-            }
+            //if (!string.IsNullOrEmpty(model.Email))
+            //{
+            //    var existEmail = await _context.UserGuests.AnyAsync(x => x.Email == model.Email);
+            //    if (existEmail)
+            //        return new ErrorResponseResult("Email already exists.");
+            //}
             var guest = model.ToEntity();
             _context.UserGuests.Add(guest);
             await _context.SaveChangesAsync();

@@ -30,7 +30,7 @@ namespace TomsFurnitureBackend.Services
             _emailService = emailService;
         }
        
-        private string ValidateOrderWithDb(OrderCreateVModel model)
+        private string ValidateOrderWithDb(OrderCreateVModel model, bool isAuthenticated = false)
         {
             if (model.OrderDetails == null || !model.OrderDetails.Any())
                 return "Order must have at least one order detail.";
@@ -51,8 +51,12 @@ namespace TomsFurnitureBackend.Services
             if (!model.PaymentMethodId.HasValue || model.PaymentMethodId <= 0)
                 return "Payment method is required.";
 
-            if (!model.OrderAddId.HasValue || model.OrderAddId <= 0)
-                return "Order address is required.";
+            // Chỉ kiểm tra OrderAddId khi người dùng đăng nhập
+            if (isAuthenticated)
+            {
+                if (!model.OrderAddId.HasValue || model.OrderAddId <= 0)
+                    return "Order address is required.";
+            }
 
             if (!string.IsNullOrEmpty(model.Note) && model.Note.Length > 500)
                 return "Note must be less than 500 characters.";
@@ -140,7 +144,7 @@ namespace TomsFurnitureBackend.Services
             }
 
             // Bước 3: Kiểm tra dữ liệu đầu vào đơn hàng
-            var validation = ValidateOrderWithDb(model);
+            var validation = ValidateOrderWithDb(model, isAuthenticated);
             if (!string.IsNullOrEmpty(validation))
                 return new ErrorResponseResult(validation);
 
@@ -200,10 +204,10 @@ namespace TomsFurnitureBackend.Services
                         case 2: // Giảm giá cố định
                             discount = Math.Min(promotion.DiscountValue, promotion.MaximumDiscountAmount);
                             break;
-                        case 3: // Miễn phí vận chuyển
-                            finalShippingPrice = 0;
-                            discount = 0;
-                            break;
+                        //case 3: // Miễn phí vận chuyển
+                        //    finalShippingPrice = 0;
+                        //    discount = 0;
+                        //    break;
                     }
                 }
                 // promotion.CouponUsage--;

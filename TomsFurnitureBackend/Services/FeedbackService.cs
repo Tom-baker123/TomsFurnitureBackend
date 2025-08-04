@@ -3,8 +3,10 @@ using OA.Domain.Common.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using TomsFurnitureBackend.Extensions;
+using TomsFurnitureBackend.Helpers;
 using TomsFurnitureBackend.Models;
 using TomsFurnitureBackend.Services.Interfaces;
 using TomsFurnitureBackend.Services.IServices;
@@ -14,142 +16,194 @@ namespace TomsFurnitureBackend.Services
 {
     public class FeedbackService : IFeedbackService
     {
-        // Context để truy cập cơ sở dữ liệu
         private readonly TomfurnitureContext _context;
+        private readonly IAuthService _authService;
+        private readonly IEmailService _emailService;
 
-        // Constructor nhận DbContext qua DI
-        public FeedbackService(TomfurnitureContext context)
+        public FeedbackService(TomfurnitureContext context, IAuthService authService, IEmailService emailService)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
+            _authService = authService ?? throw new ArgumentNullException(nameof(authService));
+            _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
         }
 
-        // Validation cho phản hồi
-        public static string ValidateFeedback(FeedbackCreateVModel model)
+        /// <summary>
+        /// Validate dữ liệu phản hồi
+        /// </summary>
+        private string ValidateFeedback(FeedbackCreateVModel model, bool isAuthenticated)
         {
-            // Kiểm tra Message không được để trống
             if (string.IsNullOrWhiteSpace(model.Message))
             {
-                return "Feedback message is required.";
+                return "Nội dung phản hồi là bắt buộc.";
             }
 
-            // Kiểm tra Message không quá 1000 ký tự
             if (model.Message.Length > 1000)
             {
-                return "Feedback message must be less than 1000 characters.";
+                return "Nội dung phản hồi phải dưới 1000 ký tự.";
             }
 
-            // Kiểm tra UserId hợp lệ
-            if (model.UserId <= 0)
+            if (!isAuthenticated)
             {
-                return "Invalid user ID.";
+                if (string.IsNullOrWhiteSpace(model.UserName))
+                {
+                    return "Tên người dùng là bắt buộc khi không đăng nhập.";
+                }
+                if (string.IsNullOrWhiteSpace(model.Email))
+                {
+                    return "Email là bắt buộc khi không đăng nhập.";
+                }
+                const string emailRegex = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
+                if (!Regex.IsMatch(model.Email.Trim(), emailRegex))
+                {
+                    return "Định dạng email không hợp lệ.";
+                }
+                if (!string.IsNullOrWhiteSpace(model.PhoneNumber))
+                {
+                    var phoneValidation = PhoneNumberHelper.ValidateAndNormalizePhoneNumber(model.PhoneNumber, out string normalizedPhone);
+                    if (!string.IsNullOrEmpty(phoneValidation))
+                    {
+                        return phoneValidation;
+                    }
+                    model.PhoneNumber = normalizedPhone;
+                }
             }
 
-            return string.Empty; // Trả về chuỗi rỗng nếu không có lỗi
+            return string.Empty;
         }
 
-        // Validation cho phương thức tạo mới
-        public static string ValidateCreate(FeedbackCreateVModel model)
+        /// <summary>
+        /// Validate khi tạo mới phản hồi
+        /// </summary>
+        private async Task<string> ValidateCreate(FeedbackCreateVModel model, HttpContext httpContext)
         {
-            return ValidateFeedback(model);
+            var authStatus = await _authService.GetAuthStatusAsync(httpContext.User, httpContext);
+            var validationResult = ValidateFeedback(model, authStatus.IsAuthenticated);
+            if (!string.IsNullOrEmpty(validationResult))
+            {
+                return validationResult;
+            }
+
+            if (model.ParentFeedbackId.HasValue)
+            {
+                var parentFeedback = await _context.Feedbacks
+                    .FirstOrDefaultAsync(f => f.Id == model.ParentFeedbackId.Value && f.IsActive == true);
+                if (parentFeedback == null)
+                {
+                    return "Phản hồi cha không tồn tại hoặc không hoạt động.";
+                }
+            }
+
+            return string.Empty;
         }
 
-        // Validation cho phương thức cập nhật
-        public static string ValidateUpdate(FeedbackUpdateVModel model)
+        /// <summary>
+        /// Validate khi cập nhật phản hồi
+        /// </summary>
+        private async Task<string> ValidateUpdate(FeedbackUpdateVModel model, HttpContext httpContext)
         {
-            // Kiểm tra Id hợp lệ
             if (model.Id <= 0)
             {
-                return "Invalid feedback ID.";
+                return "ID phản hồi không hợp lệ.";
             }
 
-            // Áp dụng các validation của Create
-            return ValidateFeedback(model);
+            var authStatus = await _authService.GetAuthStatusAsync(httpContext.User, httpContext);
+            var validationResult = ValidateFeedback(model, authStatus.IsAuthenticated);
+            if (!string.IsNullOrEmpty(validationResult))
+            {
+                return validationResult;
+            }
+
+            return string.Empty;
         }
 
-        // [1.] Tạo mới phản hồi
-        public async Task<ResponseResult> CreateAsync(FeedbackCreateVModel model)
+        /// <summary>
+        /// Tạo mới phản hồi
+        /// </summary>
+        public async Task<ResponseResult> CreateAsync(FeedbackCreateVModel model, HttpContext httpContext)
         {
             try
             {
-                // B1: Validate dữ liệu đầu vào
-                var validationResult = ValidateCreate(model);
+                // B1: Kiểm tra trạng thái đăng nhập
+                var authStatus = await _authService.GetAuthStatusAsync(httpContext.User, httpContext);
+                int? userId = authStatus.IsAuthenticated ? authStatus.UserId : null;
+                string createdBy = authStatus.IsAuthenticated ? authStatus.UserName ?? "System" : "Guest";
+
+                // B2: Validate dữ liệu
+                var validationResult = await ValidateCreate(model, httpContext);
                 if (!string.IsNullOrEmpty(validationResult))
                 {
                     return new ErrorResponseResult(validationResult);
                 }
 
-                // B2: Kiểm tra UserId tồn tại
-                var userExists = await _context.Users.AnyAsync(u => u.Id == model.UserId);
-                if (!userExists)
+                // B3: Nếu đăng nhập, sử dụng thông tin từ user
+                if (authStatus.IsAuthenticated && userId.HasValue)
                 {
-                    return new ErrorResponseResult("User not found.");
-                }
-
-                // B3: Kiểm tra ParentFeedbackId nếu có
-                if (model.ParentFeedbackId.HasValue)
-                {
-                    var parentFeedback = await _context.Feedbacks
-                        .FirstOrDefaultAsync(f => f.Id == model.ParentFeedbackId.Value && f.IsActive == true);
-                    if (parentFeedback == null)
+                    var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId.Value);
+                    if (user == null)
                     {
-                        return new ErrorResponseResult("Parent feedback not found or inactive.");
+                        return new ErrorResponseResult("Người dùng không tồn tại.");
                     }
+                    model.UserName = user.UserName;
+                    model.Email = user.Email;
+                    model.PhoneNumber = user.PhoneNumber;
                 }
 
                 // B4: Chuyển ViewModel sang Entity
-                var feedback = model.ToEntity();
+                var feedback = model.ToEntity(userId, createdBy);
 
                 // B5: Thêm phản hồi vào DbContext
                 _context.Feedbacks.Add(feedback);
                 await _context.SaveChangesAsync();
 
-                // B6: Trả về kết quả thành công
+                // B6: Gửi email thông báo
+                await FeedbackEmailHelper.SendFeedbackNotificationAsync(_emailService, feedback, true);
+
+                // B7: Trả về kết quả thành công
                 var feedbackVM = feedback.ToGetVModel();
-                return new SuccessResponseResult(feedbackVM, "Feedback created successfully.");
+                return new SuccessResponseResult(feedbackVM, "Tạo phản hồi thành công.");
             }
             catch (Exception ex)
             {
-                return new ErrorResponseResult($"An error occurred while creating the feedback: {ex.Message}");
+                return new ErrorResponseResult($"Lỗi khi tạo phản hồi: {ex.Message}");
             }
         }
 
-        // [2.] Xóa phản hồi
+        /// <summary>
+        /// Xóa phản hồi
+        /// </summary>
         public async Task<ResponseResult> DeleteAsync(int id)
         {
             try
             {
-                // B1: Tìm phản hồi theo ID
                 var feedback = await _context.Feedbacks
                     .Include(f => f.InverseParentFeedback)
                     .FirstOrDefaultAsync(f => f.Id == id);
                 if (feedback == null)
                 {
-                    return new ErrorResponseResult($"Feedback not found with ID: {id}.");
+                    return new ErrorResponseResult($"Không tìm thấy phản hồi với ID: {id}.");
                 }
 
-                // B2: Kiểm tra xem phản hồi có phản hồi con không
                 if (feedback.InverseParentFeedback.Any(f => f.IsActive == true))
                 {
-                    return new ErrorResponseResult("Feedback cannot be deleted because it has active child feedbacks.");
+                    return new ErrorResponseResult("Không thể xóa phản hồi vì có phản hồi con đang hoạt động.");
                 }
 
-                // B3: Xóa phản hồi
                 _context.Feedbacks.Remove(feedback);
                 await _context.SaveChangesAsync();
 
-                // B4: Trả về kết quả thành công
-                return new SuccessResponseResult(null, "Feedback deleted successfully.");
+                return new SuccessResponseResult(null, "Xóa phản hồi thành công.");
             }
             catch (Exception ex)
             {
-                return new ErrorResponseResult($"An error occurred while deleting the feedback: {ex.Message}");
+                return new ErrorResponseResult($"Lỗi khi xóa phản hồi: {ex.Message}");
             }
         }
 
-        // [3.] Lấy tất cả phản hồi
+        /// <summary>
+        /// Lấy tất cả phản hồi
+        /// </summary>
         public async Task<List<FeedbackGetVModel>> GetAllAsync()
         {
-            // Lấy tất cả phản hồi từ database và sắp xếp theo CreatedDate (mới nhất trước)
             var feedbacks = await _context.Feedbacks
                 .Include(f => f.InverseParentFeedback)
                 .OrderByDescending(f => f.CreatedDate)
@@ -157,68 +211,73 @@ namespace TomsFurnitureBackend.Services
             return feedbacks.Select(f => f.ToGetVModel()).ToList();
         }
 
-        // [4.] Lấy phản hồi theo ID
+        /// <summary>
+        /// Lấy phản hồi theo ID
+        /// </summary>
         public async Task<FeedbackGetVModel?> GetByIdAsync(int id)
         {
-            // Tìm phản hồi theo ID
             var feedback = await _context.Feedbacks
                 .Include(f => f.InverseParentFeedback)
                 .FirstOrDefaultAsync(f => f.Id == id);
             return feedback?.ToGetVModel();
         }
 
-        // [5.] Cập nhật phản hồi
-        public async Task<ResponseResult> UpdateAsync(FeedbackUpdateVModel model)
+        /// <summary>
+        /// Cập nhật phản hồi
+        /// </summary>
+        public async Task<ResponseResult> UpdateAsync(FeedbackUpdateVModel model, HttpContext httpContext)
         {
             try
             {
-                // B1: Kiểm tra dữ liệu đầu vào
-                var validationResult = ValidateUpdate(model);
+                // B1: Kiểm tra trạng thái đăng nhập
+                var authStatus = await _authService.GetAuthStatusAsync(httpContext.User, httpContext);
+                string updatedBy = authStatus.IsAuthenticated ? authStatus.UserName ?? "System" : "Guest";
+
+                // B2: Validate dữ liệu
+                var validationResult = await ValidateUpdate(model, httpContext);
                 if (!string.IsNullOrEmpty(validationResult))
                 {
                     return new ErrorResponseResult(validationResult);
                 }
 
-                // B2: Tìm phản hồi theo ID
+                // B3: Tìm phản hồi
                 var feedback = await _context.Feedbacks
                     .Include(f => f.InverseParentFeedback)
                     .FirstOrDefaultAsync(f => f.Id == model.Id);
                 if (feedback == null)
                 {
-                    return new ErrorResponseResult($"Feedback not found with ID: {model.Id}.");
+                    return new ErrorResponseResult($"Không tìm thấy phản hồi với ID: {model.Id}.");
                 }
 
-                // B3: Kiểm tra UserId tồn tại
-                var userExists = await _context.Users.AnyAsync(u => u.Id == model.UserId);
-                if (!userExists)
+                // B4: Nếu đăng nhập, sử dụng thông tin từ user
+                if (authStatus.IsAuthenticated && feedback.UserId.HasValue)
                 {
-                    return new ErrorResponseResult("User not found.");
-                }
-
-                // B4: Kiểm tra ParentFeedbackId nếu có
-                if (model.ParentFeedbackId.HasValue)
-                {
-                    var parentFeedback = await _context.Feedbacks
-                        .FirstOrDefaultAsync(f => f.Id == model.ParentFeedbackId.Value && f.IsActive == true);
-                    if (parentFeedback == null)
+                    var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == feedback.UserId.Value);
+                    if (user == null)
                     {
-                        return new ErrorResponseResult("Parent feedback not found or inactive.");
+                        return new ErrorResponseResult("Người dùng không tồn tại.");
                     }
+                    model.UserName = user.UserName;
+                    model.Email = user.Email;
+                    model.PhoneNumber = user.PhoneNumber;
                 }
 
                 // B5: Cập nhật thông tin phản hồi
-                feedback.UpdateEntity(model);
+                feedback.UpdateEntity(model, updatedBy);
 
                 // B6: Lưu thay đổi
                 await _context.SaveChangesAsync();
 
-                // B7: Trả về ViewModel
+                // B7: Gửi email thông báo
+                await FeedbackEmailHelper.SendFeedbackNotificationAsync(_emailService, feedback, false);
+
+                // B8: Trả về ViewModel
                 var feedbackVM = feedback.ToGetVModel();
-                return new SuccessResponseResult(feedbackVM, "Feedback updated successfully.");
+                return new SuccessResponseResult(feedbackVM, "Cập nhật phản hồi thành công.");
             }
             catch (Exception ex)
             {
-                return new ErrorResponseResult($"An error occurred while updating the feedback: {ex.Message}");
+                return new ErrorResponseResult($"Lỗi khi cập nhật phản hồi: {ex.Message}");
             }
         }
     }

@@ -53,7 +53,7 @@ namespace TomsFurnitureBackend.Services
             {
                 _logger.LogInformation("Bắt đầu lấy danh sách tất cả loại khuyến mãi.");
                 var promotionTypes = await _context.PromotionTypes
-                    .OrderByDescending(pt => pt.CreatedDate)
+                    .OrderBy(pt => pt.CreatedDate)
                     .ToListAsync();
                 var result = promotionTypes.Select(pt => pt.ToGetVModel()).ToList();
                 _logger.LogInformation("Lấy danh sách {Count} loại khuyến mãi thành công.", result.Count);
