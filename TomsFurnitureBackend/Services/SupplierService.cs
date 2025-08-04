@@ -25,43 +25,43 @@ namespace TomsFurnitureBackend.Services
             // Kiểm tra email không được để trống
             if (string.IsNullOrWhiteSpace(model.Email))
             {
-                return "Email is required.";
+                return "Email là bắt buộc.";
             }
 
             // Kiểm tra định dạng email
             if (!Regex.IsMatch(model.Email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
             {
-                return "Invalid email format.";
+                return "Định dạng email không hợp lệ.";
             }
 
             // Kiểm tra email không quá 255 ký tự
             if (model.Email.Length > 255)
             {
-                return "Email must be less than 255 characters.";
+                return "Email phải dưới 255 ký tự.";
             }
 
             // Kiểm tra mã số thuế không được để trống
             if (string.IsNullOrWhiteSpace(model.TaxId))
             {
-                return "Tax ID is required.";
+                return "Mã số thuế là bắt buộc.";
             }
 
             // Kiểm tra mã số thuế không quá 50 ký tự
             if (model.TaxId.Length > 50)
             {
-                return "Tax ID must be less than 50 characters.";
+                return "Mã số thuế phải dưới 50 ký tự.";
             }
 
             // Kiểm tra tên nhà cung cấp nếu có
             if (!string.IsNullOrWhiteSpace(model.SupplierName) && model.SupplierName.Length > 100)
             {
-                return "Supplier name must be less than 100 characters.";
+                return "Tên nhà cung cấp phải dưới 100 ký tự.";
             }
 
             // Kiểm tra tên người liên hệ nếu có
             if (!string.IsNullOrWhiteSpace(model.ContactName) && model.ContactName.Length > 100)
             {
-                return "Contact name must be less than 100 characters.";
+                return "Tên người liên hệ phải dưới 100 ký tự.";
             }
 
             // Kiểm tra số điện thoại nếu có
@@ -69,7 +69,7 @@ namespace TomsFurnitureBackend.Services
             {
                 if (model.PhoneNumber.Length > 20)
                 {
-                    return "Phone number must be less than 20 characters.";
+                    return "Số điện thoại phải dưới 20 ký tự.";
                 }
                 //if (!Regex.IsMatch(model.PhoneNumber, @"^\+?[1-9]\d{1,14}$"))
                 //{
@@ -80,7 +80,7 @@ namespace TomsFurnitureBackend.Services
             // Kiểm tra ghi chú nếu có
             if (!string.IsNullOrWhiteSpace(model.Notes) && model.Notes.Length > 500)
             {
-                return "Notes must be less than 500 characters.";
+                return "Ghi chú phải dưới 500 ký tự.";
             }
 
             return string.Empty; // Trả về chuỗi rỗng nếu không có lỗi
@@ -92,7 +92,7 @@ namespace TomsFurnitureBackend.Services
             // Kiểm tra Id hợp lệ
             if (model.Id <= 0)
             {
-                return "Invalid supplier ID.";
+                return "ID nhà cung cấp không hợp lệ.";
             }
 
             // Áp dụng các validation của Create
@@ -116,7 +116,7 @@ namespace TomsFurnitureBackend.Services
                     .AnyAsync(s => s.Email.ToLower() == model.Email.ToLower());
                 if (existingEmail)
                 {
-                    return new ErrorResponseResult("Email already exists.");
+                    return new ErrorResponseResult("Email đã tồn tại.");
                 }
 
                 // B3: Kiểm tra mã số thuế đã tồn tại chưa
@@ -124,7 +124,7 @@ namespace TomsFurnitureBackend.Services
                     .AnyAsync(s => s.TaxId.ToLower() == model.TaxId.ToLower());
                 if (existingTaxId)
                 {
-                    return new ErrorResponseResult("Tax ID already exists.");
+                    return new ErrorResponseResult("Mã số thuế đã tồn tại.");
                 }
 
                 // B4: Chuyển ViewModel sang Entity
@@ -136,11 +136,11 @@ namespace TomsFurnitureBackend.Services
 
                 // B6: Trả về kết quả thành công
                 var supplierVM = supplier.ToGetVModel();
-                return new SuccessResponseResult(supplierVM, "Supplier created successfully.");
+                return new SuccessResponseResult(supplierVM, "Tạo nhà cung cấp thành công.");
             }
             catch (Exception ex)
             {
-                return new ErrorResponseResult($"An error occurred while creating the supplier: {ex.Message}");
+                return new ErrorResponseResult($"Có lỗi xảy ra khi tạo nhà cung cấp: {ex.Message}");
             }
         }
 

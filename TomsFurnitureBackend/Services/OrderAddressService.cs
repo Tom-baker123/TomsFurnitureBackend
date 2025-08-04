@@ -26,23 +26,35 @@ namespace TomsFurnitureBackend.Services
         public static string Validate(OrderAddressCreateVModel model)
         {
             if (string.IsNullOrWhiteSpace(model.Recipient))
-                return "Recipient is required.";
+                return "Tên người nhận là bắt buộc.";
             if (string.IsNullOrWhiteSpace(model.PhoneNumber))
-                return "Phone number is required.";
+                return "Số điện thoại là bắt buộc.";
             if (string.IsNullOrWhiteSpace(model.AddressDetailRecipient))
-                return "Address detail is required.";
+                return "Địa chỉ chi tiết là bắt buộc.";
             if (string.IsNullOrWhiteSpace(model.City))
-                return "City is required.";
+                return "Thành phố là bắt buộc.";
             if (string.IsNullOrWhiteSpace(model.District))
-                return "District is required.";
+                return "Quận/Huyện là bắt buộc.";
             if (string.IsNullOrWhiteSpace(model.Ward))
-                return "Ward is required.";
+                return "Phường/Xã là bắt buộc.";
             if (model.Recipient.Length > 100)
-                return "Recipient must be less than 100 characters.";
+                return "Tên người nhận phải ít hơn 100 ký tự.";
             if (model.PhoneNumber.Length > 20)
-                return "Phone number must be less than 20 characters.";
+                return "Số điện thoại phải ít hơn 20 ký tự.";
             if (model.AddressDetailRecipient.Length > 200)
-                return "Address detail must be less than 200 characters.";
+                return "Địa chỉ chi tiết phải ít hơn 200 ký tự.";
+            return string.Empty;
+        }
+
+        private async Task<string> ValidateWithForeignKeysAsync(OrderAddressCreateVModel model)
+        {
+            // Kiểm tra khóa ngoại UserId
+            if (model.UserId.HasValue && model.UserId > 0)
+            {
+                var userExists = await _context.Users.AnyAsync(u => u.Id == model.UserId);
+                if (!userExists)
+                    return $"Người dùng với ID {model.UserId} không tồn tại.";
+            }
             return string.Empty;
         }
 
@@ -69,8 +81,6 @@ namespace TomsFurnitureBackend.Services
             var query = _context.OrderAddresses.AsQueryable();
             if (userId.HasValue)
                 query = query.Where(x => x.UserId == userId);
-            //if (isDeafaultAddress.HasValue)
-            //    query = query.Where(x => x.IsDeafaultAddress == isDeafaultAddress.Value);
             if (isDeafaultAddress.HasValue && isDeafaultAddress.Value)
             {
                 return new List<OrderAddressGetVModel> {
@@ -92,6 +102,10 @@ namespace TomsFurnitureBackend.Services
             var validation = Validate(model);
             if (!string.IsNullOrEmpty(validation))
                 return new ErrorResponseResult(validation);
+
+            var foreignKeyValidation = await ValidateWithForeignKeysAsync(model);
+            if (!string.IsNullOrEmpty(foreignKeyValidation))
+                return new ErrorResponseResult(foreignKeyValidation);
 
             // Lấy danh sách địa chỉ của user
             var userAddresses = _context.OrderAddresses.Where(x => x.UserId == model.UserId);
@@ -120,7 +134,7 @@ namespace TomsFurnitureBackend.Services
 
             _context.OrderAddresses.Add(entity);
             await _context.SaveChangesAsync();
-            return new SuccessResponseResult(entity.ToGetVModel(), "Order address created successfully.");
+            return new SuccessResponseResult(entity.ToGetVModel(), "Tạo địa chỉ giao hàng thành công.");
         }
 
         public async Task<ResponseResult> UpdateAsync(OrderAddressUpdateVModel model)
@@ -129,9 +143,13 @@ namespace TomsFurnitureBackend.Services
             if (!string.IsNullOrEmpty(validation))
                 return new ErrorResponseResult(validation);
 
+            var foreignKeyValidation = await ValidateWithForeignKeysAsync(model);
+            if (!string.IsNullOrEmpty(foreignKeyValidation))
+                return new ErrorResponseResult(foreignKeyValidation);
+
             var entity = await _context.OrderAddresses.FindAsync(model.Id);
             if (entity == null)
-                return new ErrorResponseResult("Order address not found.");
+                return new ErrorResponseResult("Không tìm thấy địa chỉ giao hàng.");
 
             // Nếu cập nhật và muốn đặt mặc định
             if (model.IsDeafaultAddress)
@@ -150,17 +168,23 @@ namespace TomsFurnitureBackend.Services
 
             entity.UpdateEntity(model);
             await _context.SaveChangesAsync();
-            return new SuccessResponseResult(entity.ToGetVModel(), "Order address updated successfully.");
+            return new SuccessResponseResult(entity.ToGetVModel(), "Cập nhật địa chỉ giao hàng thành công.");
         }
 
         public async Task<ResponseResult> DeleteAsync(int id)
         {
             var entity = await _context.OrderAddresses.FindAsync(id);
             if (entity == null)
-                return new ErrorResponseResult("Order address not found.");
+                return new ErrorResponseResult("Không tìm thấy địa chỉ giao hàng.");
+
+            // Kiểm tra xem có đơn hàng nào đang sử dụng địa chỉ này không
+            var ordersUsingAddress = await _context.Orders.AnyAsync(o => o.OrderAddId == id);
+            if (ordersUsingAddress)
+                return new ErrorResponseResult("Không thể xóa địa chỉ này vì đang được sử dụng bởi một hoặc nhiều đơn hàng.");
+
             _context.OrderAddresses.Remove(entity);
             await _context.SaveChangesAsync();
-            return new SuccessResponseResult(null, "Order address deleted successfully.");
+            return new SuccessResponseResult(null, "Xóa địa chỉ giao hàng thành công.");
         }
     }
 }

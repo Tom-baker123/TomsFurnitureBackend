@@ -46,18 +46,18 @@ namespace TomsFurnitureBackend.Services
             var cartJson = httpContext.Request.Cookies["GuestCart"];
             if (string.IsNullOrEmpty(cartJson))
             {
-                _logger.LogInformation("GuestCart cookie not found.");
+                _logger.LogInformation("Không tìm thấy cookie GuestCart.");
                 return new List<CartCreateVModel>();
             }
             try
             {
                 var cartItems = JsonConvert.DeserializeObject<List<CartCreateVModel>>(cartJson) ?? new List<CartCreateVModel>();
-                _logger.LogInformation("Successfully read GuestCart cookie with {Count} items: {Content}", cartItems.Count, cartJson);
+                _logger.LogInformation("Đọc thành công cookie GuestCart với {Count} sản phẩm: {Content}", cartItems.Count, cartJson);
                 return cartItems;
             }
             catch
             {
-                _logger.LogWarning("Unable to decode cart cookie.");
+                _logger.LogWarning("Không thể giải mã cookie giỏ hàng.");
                 return new List<CartCreateVModel>();
             }
         }
@@ -65,7 +65,7 @@ namespace TomsFurnitureBackend.Services
         private void SaveCartToCookies(HttpContext httpContext, List<CartCreateVModel> cartItems)
         {
             var cartJson = JsonConvert.SerializeObject(cartItems);
-            _logger.LogInformation("Saving GuestCart cookie with content: {Content}", cartJson);
+            _logger.LogInformation("Lưu cookie GuestCart với nội dung: {Content}", cartJson);
             var cookieOptions = new CookieOptions
             {
                 HttpOnly = true,
@@ -79,16 +79,18 @@ namespace TomsFurnitureBackend.Services
         // Kiểm tra tính hợp lệ của mục giỏ hàng
         private async Task<ResponseResult?> ValidateCartItemAsync(CartCreateVModel model)
         {
+            // Kiểm tra biến thể sản phẩm có tồn tại không
             if (!await _context.ProductVariants.AnyAsync(p => p.Id == model.ProVarId))
             {
-                // Biến thể sản phẩm với ID không tồn tại
-                return new ErrorResponseResult($"Product variant with ID {model.ProVarId} does not exist.");
+                return new ErrorResponseResult($"Biến thể sản phẩm với ID {model.ProVarId} không tồn tại.");
             }
+            
+            // Kiểm tra số lượng phải lớn hơn 0
             if (model.Quantity <= 0)
             {
-                // Số lượng phải lớn hơn 0
-                return new ErrorResponseResult("Quantity must be greater than 0.");
+                return new ErrorResponseResult("Số lượng phải lớn hơn 0.");
             }
+            
             return null;
         }
 
@@ -125,7 +127,7 @@ namespace TomsFurnitureBackend.Services
                     await _context.SaveChangesAsync();
                     var cart = await GetCartAsync(httpContext);
                     // Thêm thành công vào giỏ hàng
-                    return new SuccessResponseResult(cart, "Added to cart successfully.");
+                    return new SuccessResponseResult(cart, "Thêm vào giỏ hàng thành công.");
                 }
                 else
                 {
@@ -141,14 +143,14 @@ namespace TomsFurnitureBackend.Services
                     }
                     SaveCartToCookies(httpContext, cartItems);
                     // Thêm thành công vào giỏ hàng (cookie)
-                    return new SuccessResponseResult(cartItems.Select(c => CartMapping.ToGetVModel(new Cart { Quantity = c.Quantity, ProVarId = c.ProVarId })).ToList(), "Added to cart successfully.");
+                    return new SuccessResponseResult(cartItems.Select(c => CartMapping.ToGetVModel(new Cart { Quantity = c.Quantity, ProVarId = c.ProVarId })).ToList(), "Thêm vào giỏ hàng thành công.");
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error adding to cart: {Error}", ex.Message);
+                _logger.LogError(ex, "Lỗi khi thêm vào giỏ hàng: {Error}", ex.Message);
                 // Lỗi khi thêm vào giỏ hàng
-                return new ErrorResponseResult($"Error adding to cart: {ex.Message}");
+                return new ErrorResponseResult($"Lỗi khi thêm vào giỏ hàng: {ex.Message}");
             }
         }
 
@@ -171,13 +173,13 @@ namespace TomsFurnitureBackend.Services
                     if (cartItem == null)
                     {
                         // Không tìm thấy mục giỏ hàng
-                        return new ErrorResponseResult($"Cart item with ID {model.Id} not found.");
+                        return new ErrorResponseResult($"Không tìm thấy sản phẩm trong giỏ hàng với ID {model.Id}.");
                     }
                     CartMapping.UpdateEntity(cartItem, model); // Sử dụng CartMapping
                     await _context.SaveChangesAsync();
                     var cart = await GetCartAsync(httpContext);
                     // Cập nhật giỏ hàng thành công
-                    return new SuccessResponseResult(cart, "Cart updated successfully.");
+                    return new SuccessResponseResult(cart, "Cập nhật giỏ hàng thành công.");
                 }
                 else
                 {
@@ -186,19 +188,19 @@ namespace TomsFurnitureBackend.Services
                     if (existingItem == null)
                     {
                         // Không tìm thấy mục giỏ hàng (cookie)
-                        return new ErrorResponseResult($"Cart item with ProVarId {model.ProVarId} not found.");
+                        return new ErrorResponseResult($"Không tìm thấy sản phẩm trong giỏ hàng với ID biến thể {model.ProVarId}.");
                     }
                     existingItem.Quantity = model.Quantity;
                     SaveCartToCookies(httpContext, cartItems);
                     // Cập nhật giỏ hàng thành công (cookie)
-                    return new SuccessResponseResult(cartItems.Select(c => CartMapping.ToGetVModel(new Cart { Quantity = c.Quantity, ProVarId = c.ProVarId })).ToList(), "Cart updated successfully.");
+                    return new SuccessResponseResult(cartItems.Select(c => CartMapping.ToGetVModel(new Cart { Quantity = c.Quantity, ProVarId = c.ProVarId })).ToList(), "Cập nhật giỏ hàng thành công.");
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating cart: {Error}", ex.Message);
+                _logger.LogError(ex, "Lỗi khi cập nhật giỏ hàng: {Error}", ex.Message);
                 // Lỗi khi cập nhật giỏ hàng
-                return new ErrorResponseResult($"Error updating cart: {ex.Message}");
+                return new ErrorResponseResult($"Lỗi khi cập nhật giỏ hàng: {ex.Message}");
             }
         }
 
@@ -215,14 +217,14 @@ namespace TomsFurnitureBackend.Services
                     if (cartItem == null)
                     {
                         // Không tìm thấy mục giỏ hàng
-                        return new ErrorResponseResult($"Cart item with ID {id} not found.");
+                        return new ErrorResponseResult($"Không tìm thấy sản phẩm trong giỏ hàng với ID {id}.");
                     }
                     // Hard delete: Remove the cart item from the database
                     _context.Carts.Remove(cartItem);
                     await _context.SaveChangesAsync();
                     var cart = await GetCartAsync(httpContext);
                     // Xóa thành công khỏi giỏ hàng
-                    return new SuccessResponseResult(cart, "Item removed from cart successfully.");
+                    return new SuccessResponseResult(cart, "Xóa sản phẩm khỏi giỏ hàng thành công.");
                 }
                 else
                 {
@@ -232,19 +234,19 @@ namespace TomsFurnitureBackend.Services
                     if (existingItem == null)
                     {
                         // Không tìm thấy mục giỏ hàng (cookie)
-                        return new ErrorResponseResult($"Cart item with ProVarId {id} not found.");
+                        return new ErrorResponseResult($"Không tìm thấy sản phẩm trong giỏ hàng với ID biến thể {id}.");
                     }
                     cartItems.Remove(existingItem);
                     SaveCartToCookies(httpContext, cartItems);
                     // Xóa thành công khỏi giỏ hàng (cookie)
-                    return new SuccessResponseResult(cartItems.Select(c => CartMapping.ToGetVModel(new Cart { Quantity = c.Quantity, ProVarId = c.ProVarId })).ToList(), "Item removed from cart successfully.");
+                    return new SuccessResponseResult(cartItems.Select(c => CartMapping.ToGetVModel(new Cart { Quantity = c.Quantity, ProVarId = c.ProVarId })).ToList(), "Xóa sản phẩm khỏi giỏ hàng thành công.");
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error removing from cart: {Error}", ex.Message);
+                _logger.LogError(ex, "Lỗi khi xóa khỏi giỏ hàng: {Error}", ex.Message);
                 // Lỗi khi xóa khỏi giỏ hàng
-                return new ErrorResponseResult($"Error removing from cart: {ex.Message}");
+                return new ErrorResponseResult($"Lỗi khi xóa khỏi giỏ hàng: {ex.Message}");
             }
         }
 
@@ -298,7 +300,7 @@ namespace TomsFurnitureBackend.Services
         {
             try
             {
-                _logger.LogInformation("[MERGE] Bắt đầu merge cart từ cookie cho userId: {UserId}", userId);
+                _logger.LogInformation("[MERGE] Bắt đầu hợp nhất giỏ hàng từ cookie cho userId: {UserId}", userId);
                 int? actualUserId = userId;
                 if (!actualUserId.HasValue)
                 {
@@ -307,25 +309,25 @@ namespace TomsFurnitureBackend.Services
                 }
                 if (!actualUserId.HasValue)
                 {
-                    _logger.LogWarning("[MERGE] User chưa đăng nhập, không thể merge cart.");
-                    return new ErrorResponseResult("User is not logged in.");
+                    _logger.LogWarning("[MERGE] Người dùng chưa đăng nhập, không thể hợp nhất giỏ hàng.");
+                    return new ErrorResponseResult("Người dùng chưa đăng nhập.");
                 }
 
                 var cartItems = GetCartFromCookies(httpContext);
-                _logger.LogInformation("[MERGE] Đọc được {Count} item từ GuestCart cookie: {Content}", cartItems.Count, JsonConvert.SerializeObject(cartItems));
+                _logger.LogInformation("[MERGE] Đọc được {Count} sản phẩm từ cookie GuestCart: {Content}", cartItems.Count, JsonConvert.SerializeObject(cartItems));
                 if (!cartItems.Any())
                 {
-                    _logger.LogInformation("[MERGE] Không có mục nào trong cookie để hợp nhất.");
-                    return new SuccessResponseResult(null, "No cart items in cookies to merge.");
+                    _logger.LogInformation("[MERGE] Không có sản phẩm nào trong cookie để hợp nhất.");
+                    return new SuccessResponseResult(null, "Không có sản phẩm nào trong cookie để hợp nhất.");
                 }
 
                 foreach (var item in cartItems)
                 {
-                    _logger.LogInformation("[MERGE] Đang xử lý item: ProVarId={ProVarId}, Quantity={Quantity}", item.ProVarId, item.Quantity);
+                    _logger.LogInformation("[MERGE] Đang xử lý sản phẩm: ProVarId={ProVarId}, Quantity={Quantity}", item.ProVarId, item.Quantity);
                     var validationResult = await ValidateCartItemAsync(item);
                     if (validationResult != null)
                     {
-                        _logger.LogWarning("[MERGE] Item không hợp lệ, bỏ qua: ProVarId={ProVarId}, Lý do: {Message}", item.ProVarId, validationResult.Message);
+                        _logger.LogWarning("[MERGE] Sản phẩm không hợp lệ, bỏ qua: ProVarId={ProVarId}, Lý do: {Message}", item.ProVarId, validationResult.Message);
                         continue;
                     }
 
@@ -333,21 +335,21 @@ namespace TomsFurnitureBackend.Services
                         .FirstOrDefaultAsync(c => c.UserId == actualUserId && c.ProVarId == item.ProVarId && c.IsActive == true);
                     if (existingCartItem != null)
                     {
-                        _logger.LogInformation("[MERGE] Đã có item trong DB, cộng thêm số lượng: ProVarId={ProVarId}, OldQuantity={OldQuantity}, Add={Add}", item.ProVarId, existingCartItem.Quantity, item.Quantity);
+                        _logger.LogInformation("[MERGE] Đã có sản phẩm trong cơ sở dữ liệu, cộng thêm số lượng: ProVarId={ProVarId}, SốLượngCũ={OldQuantity}, ThêmVào={Add}", item.ProVarId, existingCartItem.Quantity, item.Quantity);
                         existingCartItem.Quantity += item.Quantity;
                         existingCartItem.UpdatedDate = DateTime.UtcNow;
                         existingCartItem.UpdatedBy = actualUserId.ToString();
                     }
                     else
                     {
-                        _logger.LogInformation("[MERGE] Thêm mới item vào DB: ProVarId={ProVarId}, Quantity={Quantity}", item.ProVarId, item.Quantity);
+                        _logger.LogInformation("[MERGE] Thêm mới sản phẩm vào cơ sở dữ liệu: ProVarId={ProVarId}, Quantity={Quantity}", item.ProVarId, item.Quantity);
                         var cartEntity = CartMapping.ToEntity(item, actualUserId); // Sử dụng CartMapping
                         _context.Carts.Add(cartEntity);
                     }
                 }
 
                 await _context.SaveChangesAsync();
-                _logger.LogInformation("[MERGE] Đã lưu thay đổi vào DB.");
+                _logger.LogInformation("[MERGE] Đã lưu thay đổi vào cơ sở dữ liệu.");
 
                 httpContext.Response.Cookies.Delete("GuestCart", new CookieOptions
                 {
@@ -356,17 +358,17 @@ namespace TomsFurnitureBackend.Services
                     SameSite = SameSiteMode.None,
                     HttpOnly = true
                 });
-                _logger.LogInformation("[MERGE] Đã xóa GuestCart cookie sau khi merge.");
+                _logger.LogInformation("[MERGE] Đã xóa cookie GuestCart sau khi hợp nhất.");
 
                 var cart = await GetCartAsync(httpContext);
-                _logger.LogInformation("[MERGE] Merge cart thành công cho userId: {UserId}", actualUserId);
-                return new SuccessResponseResult(cart, "Cart merged successfully.");
+                _logger.LogInformation("[MERGE] Hợp nhất giỏ hàng thành công cho userId: {UserId}", actualUserId);
+                return new SuccessResponseResult(cart, "Hợp nhất giỏ hàng thành công.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[MERGE] Error merging cart from cookies: {Error}", ex.Message);
+                _logger.LogError(ex, "[MERGE] Lỗi khi hợp nhất giỏ hàng từ cookie: {Error}", ex.Message);
                 // Lỗi khi hợp nhất giỏ hàng
-                return new ErrorResponseResult($"Error merging cart: {ex.Message}");
+                return new ErrorResponseResult($"Lỗi khi hợp nhất giỏ hàng: {ex.Message}");
             }
         }
 

@@ -25,13 +25,13 @@ namespace TomsFurnitureBackend.Services
             // Kiểm tra tên màu sắc không được để trống
             if (string.IsNullOrWhiteSpace(model.ColorName))
             {
-                return "Color name is required.";
+                return "Tên màu sắc là bắt buộc.";
             }
 
             // Kiểm tra độ dài tên màu sắc (tối đa 50 ký tự)
             if (model.ColorName.Length > 50)
             {
-                return "ColorName must be less than 50 characters.";
+                return "Tên màu sắc phải dưới 50 ký tự.";
             }
 
             // Kiểm tra mã màu sắc phù hợp không?
@@ -40,7 +40,7 @@ namespace TomsFurnitureBackend.Services
                 //if (!Regex.IsMatch(model.ColorCode, @"^#[0-9A-Fa-f]{6}$")) {
                 //    return "Mã màu phải là định dạng hex hợp lệ (ví dụ: #FFFFFF).";
                 //}
-                return "ColorCode not right format!";
+                return "Mã màu không đúng định dạng!";
             }
 
             // Kiểm tra trạng thái hoạt động (IsActive) phải là true hoặc false
@@ -51,25 +51,25 @@ namespace TomsFurnitureBackend.Services
 
             return string.Empty; // Trả về chuỗi rỗng nếu không có lỗi
         }
-        // ----- [Validation phương thức tạo mới màu sắc] -------------------------
+        // ----- [Validation phương thức cập nhật màu sắc] -------------------------
         public static string ValidateUpdate(ColorUpdateVModel model)
         {
             // Kiểm tra Id có giá trị hợp lệ
             if (model.Id <= 0)
             {
-                return "Id must be greater than 0.";
+                return "ID phải lớn hơn 0.";
             }
 
             // Kiem tra tên màu sắc không được để trống
             if (string.IsNullOrWhiteSpace(model.ColorName))
             {
-                return "Color name is required.";
+                return "Tên màu sắc là bắt buộc.";
             }
 
             // Kiểm tra độ dài tên màu sắc (tối đa 50 ký tự)
             if (model.ColorName.Length > 50)
             {
-                return "ColorName must be less than 50 characters.";
+                return "Tên màu sắc phải dưới 50 ký tự.";
             }
 
             // Kiểm tra mã màu sắc phù hợp không?
@@ -78,12 +78,12 @@ namespace TomsFurnitureBackend.Services
                 //if (!Regex.IsMatch(model.ColorCode, @"^#[0-9A-Fa-f]{6}$")) {
                 //    return "Mã màu phải là định dạng hex hợp lệ (ví dụ: #FFFFFF).";
                 //}
-                return "ColorCode not right format!";
+                return "Mã màu không đúng định dạng!";
             }
 
             if (model.IsActive.HasValue && model.IsActive != true && model.IsActive != false)
             {
-                return "IsActive must be true or false.";
+                return "Trạng thái hoạt động phải là true hoặc false.";
             }
             // Kiểm tra tên màu sắc không được để trống
             return string.Empty;
@@ -109,7 +109,7 @@ namespace TomsFurnitureBackend.Services
                     .AnyAsync(c => c.ColorName.ToLower() == model.ColorName.ToLower());
                 if (existingColor)
                 {
-                    return new ErrorResponseResult("Color name already exists.");
+                    return new ErrorResponseResult("Tên màu sắc đã tồn tại.");
                 }
 
                 // B3: Chuyển VModel sang Entity
@@ -121,11 +121,11 @@ namespace TomsFurnitureBackend.Services
 
                 // B5: Chuyển đổi Entity sang VModel để trả về
                 var colorVM = color.ToGetVModel(); // Phương thức mở rộng ToGetVModel() để chuyển đổi Entity sang VModel
-                return new SuccessResponseResult(colorVM, "You have Added color success!");
+                return new SuccessResponseResult(colorVM, "Thêm màu sắc thành công!");
             }
             catch (Exception ex)
             {
-                return new ErrorResponseResult($"You have an error when creating color: {ex.Message}");
+                return new ErrorResponseResult($"Có lỗi xảy ra khi tạo màu sắc: {ex.Message}");
             }
         }
 
@@ -138,24 +138,24 @@ namespace TomsFurnitureBackend.Services
                 var color = await _context.Colors.FirstOrDefaultAsync(c => c.Id == id);
                 if (color == null)
                 {
-                    return new ErrorResponseResult($"Id {id} not found");
+                    return new ErrorResponseResult($"Không tìm thấy màu sắc với ID {id}");
                 }
 
                 // Kiểm tra xem màu sắc có đang được sử dụng trong ProductVariant không không?
                 var isUsedInProductVariant = await _context.ProductVariants.AnyAsync(pv => pv.ColorId == id);
                 if (isUsedInProductVariant) {
-                    return new ErrorResponseResult("This color is being used in ProductVariant and cannot be deleted.");
+                    return new ErrorResponseResult("Màu sắc này đang được sử dụng trong biến thể sản phẩm và không thể xóa.");
                 }
 
                 // Xóa màu sắc nếu tồn tại
                 _context.Colors.Remove(color);
                 await _context.SaveChangesAsync();
 
-                return new SuccessResponseResult(color, "You have deleted your color!");
+                return new SuccessResponseResult(color, "Xóa màu sắc thành công!");
             }
             catch (Exception ex)
             {
-                return new ErrorResponseResult($"You have an error when deleted color: {ex.Message}");
+                return new ErrorResponseResult($"Có lỗi xảy ra khi xóa màu sắc: {ex.Message}");
             }
         }
 
@@ -196,7 +196,7 @@ namespace TomsFurnitureBackend.Services
                     .FirstOrDefaultAsync(c => c.Id == model.Id);
                 if (color == null)
                 {
-                    return new ErrorResponseResult("Id not found");
+                    return new ErrorResponseResult("Không tìm thấy màu sắc với ID này");
                 }
 
                 // B3: Kiểm tra xem tên màu sắc đã tồn tại chưa? (trừ tên màu sắc hiện tại)
@@ -204,7 +204,7 @@ namespace TomsFurnitureBackend.Services
                     .AnyAsync(c => c.ColorName.ToLower() == model.ColorName.ToLower() && c.Id != model.Id);
                 if (existingColor)
                 {
-                    return new ErrorResponseResult("Color name already exists.");
+                    return new ErrorResponseResult("Tên màu sắc đã tồn tại.");
                 }
 
                 // B4: Cập nhật thông tin màu sắc từ model
@@ -215,11 +215,11 @@ namespace TomsFurnitureBackend.Services
 
                 // B6: Chuyển đổi Entity sang ViewModel để trả về Success
                 var colorVM = color.ToGetVModel(); // Phương thức ToGetVModel() để chuyển đổi Entity sang VModel
-                return new SuccessResponseResult(colorVM, "You have updated your color successfully!");
+                return new SuccessResponseResult(colorVM, "Cập nhật màu sắc thành công!");
             }
             catch (Exception ex)
             {
-                return new ErrorResponseResult($"You have an error when updating color: {ex.Message}");
+                return new ErrorResponseResult($"Có lỗi xảy ra khi cập nhật màu sắc: {ex.Message}");
             }
         }
     }
