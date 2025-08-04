@@ -25,6 +25,12 @@ public partial class Comment
 
     public int? UserId { get; set; }
 
+    public string UserName { get; set; } = null!;
+
+    public string? PhoneNumber { get; set; }
+
+    public string Email { get; set; } = null!;
+
     public virtual ProductReview? ProReview { get; set; }
 
     public virtual User? User { get; set; }

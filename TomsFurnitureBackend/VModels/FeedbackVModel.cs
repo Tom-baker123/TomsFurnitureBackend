@@ -1,46 +1,85 @@
-﻿using System;
-
-namespace TomsFurnitureBackend.VModels
+﻿namespace TomsFurnitureBackend.VModels
 {
-    // ViewModel để tạo mới phản hồi
+    /// <summary>
+    /// ViewModel để tạo mới phản hồi
+    /// </summary>
     public class FeedbackCreateVModel
     {
-        // Nội dung phản hồi, bắt buộc
+        /// <summary>
+        /// Nội dung phản hồi, bắt buộc
+        /// </summary>
         public string Message { get; set; } = null!;
 
-        // ID phản hồi cha, tùy chọn
+        /// <summary>
+        /// ID phản hồi cha, tùy chọn
+        /// </summary>
         public int? ParentFeedbackId { get; set; }
 
-        // ID người dùng, bắt buộc
-        public int UserId { get; set; }
+        /// <summary>
+        /// Tên người dùng, bắt buộc nếu không đăng nhập
+        /// </summary>
+        public string? UserName { get; set; }
+
+        /// <summary>
+        /// Email, bắt buộc nếu không đăng nhập
+        /// </summary>
+        public string? Email { get; set; }
+
+        /// <summary>
+        /// Số điện thoại, tùy chọn
+        /// </summary>
+        public string? PhoneNumber { get; set; }
     }
 
-    // ViewModel để cập nhật phản hồi
+    /// <summary>
+    /// ViewModel để cập nhật phản hồi
+    /// </summary>
     public class FeedbackUpdateVModel : FeedbackCreateVModel
     {
-        // ID của phản hồi
+        /// <summary>
+        /// ID của phản hồi
+        /// </summary>
         public int Id { get; set; }
 
-        // Trạng thái hoạt động, tùy chọn
+        /// <summary>
+        /// Trạng thái hoạt động, tùy chọn
+        /// </summary>
         public bool? IsActive { get; set; }
     }
 
-    // ViewModel để lấy thông tin phản hồi
+    /// <summary>
+    /// ViewModel để lấy thông tin phản hồi
+    /// </summary>
     public class FeedbackGetVModel : FeedbackUpdateVModel
     {
-        // Ngày tạo
+        /// <summary>
+        /// Ngày tạo
+        /// </summary>
         public DateTime? CreatedDate { get; set; }
 
-        // Ngày cập nhật
+        /// <summary>
+        /// Ngày cập nhật
+        /// </summary>
         public DateTime? UpdatedDate { get; set; }
 
-        // Người tạo
+        /// <summary>
+        /// Người tạo
+        /// </summary>
         public string? CreatedBy { get; set; }
 
-        // Người cập nhật
+        /// <summary>
+        /// Người cập nhật
+        /// </summary>
         public string? UpdatedBy { get; set; }
 
-        // Danh sách ID phản hồi con
+        /// <summary>
+        /// Danh sách ID phản hồi con
+        /// </summary>
         public List<int> ChildFeedbackIds { get; set; } = new List<int>();
+
+        /// <summary>
+        /// ID người dùng, có thể null nếu không đăng nhập
+        /// </summary>
+        public int? UserId { get; set; }
     }
 }

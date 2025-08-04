@@ -5,32 +5,43 @@ namespace TomsFurnitureBackend.Extensions
 {
     public static class FeedbackExtensions
     {
-        // Chuyển từ FeedbackCreateVModel sang Entity Feedback
-        public static Feedback ToEntity(this FeedbackCreateVModel model)
+        /// <summary>
+        /// Chuyển từ FeedbackCreateVModel sang Entity Feedback
+        /// </summary>
+        public static Feedback ToEntity(this FeedbackCreateVModel model, int? userId, string createdBy)
         {
-            // Tạo mới Feedback entity với các giá trị từ ViewModel
             return new Feedback
             {
                 Message = model.Message,
                 ParentFeedbackId = model.ParentFeedbackId,
-                UserId = model.UserId,
-                IsActive = true, // Mặc định là true khi tạo mới
-                CreatedDate = DateTime.UtcNow // Sử dụng UTC để nhất quán
+                UserId = userId, // Có thể null nếu không đăng nhập
+                UserName = model.UserName,
+                Email = model.Email,
+                PhoneNumber = model.PhoneNumber,
+                IsActive = true,
+                CreatedDate = DateTime.UtcNow,
+                CreatedBy = createdBy
             };
         }
 
-        // Cập nhật thông tin Entity Feedback từ FeedbackUpdateVModel
-        public static void UpdateEntity(this Feedback entity, FeedbackUpdateVModel model)
+        /// <summary>
+        /// Cập nhật thông tin Entity Feedback từ FeedbackUpdateVModel
+        /// </summary>
+        public static void UpdateEntity(this Feedback entity, FeedbackUpdateVModel model, string updatedBy)
         {
-            // Cập nhật các thuộc tính của entity
             entity.Message = model.Message;
             entity.ParentFeedbackId = model.ParentFeedbackId;
-            entity.UserId = model.UserId;
-            entity.IsActive = model.IsActive ?? entity.IsActive; // Giữ nguyên nếu không có giá trị mới
-            entity.UpdatedDate = DateTime.UtcNow; // Cập nhật thời gian sửa đổi
+            entity.UserName = model.UserName;
+            entity.Email = model.Email;
+            entity.PhoneNumber = model.PhoneNumber;
+            entity.IsActive = model.IsActive ?? entity.IsActive;
+            entity.UpdatedDate = DateTime.UtcNow;
+            entity.UpdatedBy = updatedBy;
         }
 
-        // Chuyển từ Entity Feedback sang FeedbackGetVModel
+        /// <summary>
+        /// Chuyển từ Entity Feedback sang FeedbackGetVModel
+        /// </summary>
         public static FeedbackGetVModel ToGetVModel(this Feedback entity)
         {
             return new FeedbackGetVModel
@@ -38,7 +49,10 @@ namespace TomsFurnitureBackend.Extensions
                 Id = entity.Id,
                 Message = entity.Message,
                 ParentFeedbackId = entity.ParentFeedbackId,
-                UserId = entity.UserId ?? 0,
+                UserId = entity.UserId,
+                UserName = entity.UserName,
+                Email = entity.Email,
+                PhoneNumber = entity.PhoneNumber,
                 IsActive = entity.IsActive,
                 CreatedDate = entity.CreatedDate,
                 UpdatedDate = entity.UpdatedDate,

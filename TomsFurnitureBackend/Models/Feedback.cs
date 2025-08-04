@@ -23,6 +23,12 @@ public partial class Feedback
 
     public int? UserId { get; set; }
 
+    public string UserName { get; set; } = null!;
+
+    public string? PhoneNumber { get; set; }
+
+    public string Email { get; set; } = null!;
+
     public virtual ICollection<Feedback> InverseParentFeedback { get; set; } = new List<Feedback>();
 
     public virtual Feedback? ParentFeedback { get; set; }

@@ -38,8 +38,8 @@ namespace TomsFurnitureBackend.Services
                 return "URL liên kết là bắt buộc.";
 
             // Kiểm tra StartDate
-            if (model.StartDate < DateTime.Now)
-                return "Ngày bắt đầu không thể ở quá khứ.";
+            //if (model.StartDate < DateTime.Now)
+            //    return "Ngày bắt đầu không thể ở quá khứ.";
 
             // Kiểm tra EndDate
             if (model.EndDate < model.StartDate)

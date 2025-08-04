@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using OA.Domain.Common.Models;
 using System;
 using System.Threading.Tasks;
@@ -17,49 +18,79 @@ namespace TomsFurnitureBackend.Controllers
         private readonly IFeedbackService _feedbackService;
         private readonly ILogger<FeedbackController> _logger;
 
-        // Constructor nhận các dependency qua DI
         public FeedbackController(IFeedbackService feedbackService, ILogger<FeedbackController> logger, TomfurnitureContext context)
         {
-            _context = context;
-            _feedbackService = feedbackService;
-            _logger = logger;
+            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _feedbackService = feedbackService ?? throw new ArgumentNullException(nameof(feedbackService));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        // [1.] Lấy danh sách tất cả phản hồi
+        /// <summary>
+        /// Lấy danh sách tất cả phản hồi
+        /// </summary>
         [HttpGet]
-        public async Task<List<FeedbackGetVModel>> GetAllFeedback()
+        [AllowAnonymous]
+        public async Task<IActionResult> GetAllFeedback()
         {
-            // Gọi service để lấy danh sách tất cả phản hồi
-            return await _feedbackService.GetAllAsync();
+            try
+            {
+                _logger.LogInformation("Lấy danh sách tất cả phản hồi.");
+                var feedbacks = await _feedbackService.GetAllAsync();
+                return Ok(feedbacks);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy danh sách phản hồi.");
+                return StatusCode(500, new { Message = "Lỗi khi lấy danh sách phản hồi.", Error = ex.Message });
+            }
         }
 
-        // [2.] Lấy phản hồi theo ID
+        /// <summary>
+        /// Lấy phản hồi theo ID
+        /// </summary>
         [HttpGet("{id}")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetByIdFeedback(int id)
         {
-            // Gọi service để lấy phản hồi theo ID
-            var feedback = await _feedbackService.GetByIdAsync(id);
-            if (feedback == null)
+            try
             {
-                return NotFound(new { Message = "Feedback not found." });
+                _logger.LogInformation("Lấy phản hồi với ID: {Id}", id);
+                var feedback = await _feedbackService.GetByIdAsync(id);
+                if (feedback == null)
+                {
+                    return NotFound(new { Message = "Không tìm thấy phản hồi." });
+                }
+                return Ok(feedback);
             }
-            return Ok(feedback);
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy phản hồi với ID: {Id}", id);
+                return StatusCode(500, new { Message = "Lỗi khi lấy phản hồi.", Error = ex.Message });
+            }
         }
 
-        // [3.] Tạo phản hồi mới
+        /// <summary>
+        /// Tạo phản hồi mới
+        /// </summary>
         [HttpPost]
+        [AllowAnonymous]
         public async Task<IActionResult> CreateFeedback([FromBody] FeedbackCreateVModel feedbackVModel)
         {
             try
             {
-                // B1: Gọi service để tạo phản hồi
-                var result = await _feedbackService.CreateAsync(feedbackVModel);
-                if (!result.IsSuccess)
+                if (feedbackVModel == null)
                 {
-                    return BadRequest(result.Message);
+                    _logger.LogWarning("Dữ liệu phản hồi không hợp lệ.");
+                    return BadRequest(new { Message = "Dữ liệu phản hồi không hợp lệ." });
                 }
 
-                // B2: Trả về phản hồi thành công
+                _logger.LogInformation("Tạo phản hồi mới.");
+                var result = await _feedbackService.CreateAsync(feedbackVModel, HttpContext);
+                if (!result.IsSuccess)
+                {
+                    return BadRequest(new { Message = result.Message });
+                }
+
                 var successResult = result as SuccessResponseResult;
                 return CreatedAtAction(
                     nameof(GetByIdFeedback),
@@ -72,60 +103,64 @@ namespace TomsFurnitureBackend.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError("Error creating feedback: {Error}", ex.Message);
-                return StatusCode(500, new { Message = "An error occurred while creating the feedback.", Error = ex.Message });
+                _logger.LogError(ex, "Lỗi khi tạo phản hồi.");
+                return StatusCode(500, new { Message = "Lỗi khi tạo phản hồi.", Error = ex.Message });
             }
         }
 
-        // [4.] Cập nhật phản hồi
+        /// <summary>
+        /// Cập nhật phản hồi
+        /// </summary>
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateFeedback(int id, [FromBody] FeedbackUpdateVModel feedbackVModel)
         {
             try
             {
-                // Kiểm tra ID hợp lệ
                 if (id != feedbackVModel.Id)
                 {
-                    return BadRequest("ID in URL does not match ID in model.");
+                    _logger.LogWarning("ID trong URL không khớp với ID trong model.");
+                    return BadRequest(new { Message = "ID trong URL không khớp với ID trong model." });
                 }
 
-                // B1: Gọi service để cập nhật phản hồi
-                var result = await _feedbackService.UpdateAsync(feedbackVModel);
+                _logger.LogInformation("Cập nhật phản hồi với ID: {Id}", id);
+                var result = await _feedbackService.UpdateAsync(feedbackVModel, HttpContext);
                 if (!result.IsSuccess)
                 {
-                    return BadRequest(result.Message);
+                    return BadRequest(new { Message = result.Message });
                 }
 
-                // Trả về phản hồi thành công
-                return Ok(result);
+                return Ok(new { Message = ((SuccessResponseResult)result).Message, Feedback = ((SuccessResponseResult)result).Data });
             }
             catch (Exception ex)
             {
-                _logger.LogError("Error updating feedback: {Error}", ex.Message);
-                return StatusCode(500, new { Message = "An error occurred while updating the feedback.", Error = ex.Message });
+                _logger.LogError(ex, "Lỗi khi cập nhật phản hồi với ID: {Id}", id);
+                return StatusCode(500, new { Message = "Lỗi khi cập nhật phản hồi.", Error = ex.Message });
             }
         }
 
-        // [5.] Xóa phản hồi theo ID
+        /// <summary>
+        /// Xóa phản hồi theo ID
+        /// </summary>
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteFeedback(int id)
         {
             try
             {
-                // B1: Gọi service để xóa phản hồi
+                _logger.LogInformation("Xóa phản hồi với ID: {Id}", id);
                 var result = await _feedbackService.DeleteAsync(id);
                 if (!result.IsSuccess)
                 {
-                    return BadRequest(result.Message);
+                    return BadRequest(new { Message = result.Message });
                 }
 
-                // B2: Trả về phản hồi thành công
-                return Ok(result);
+                return Ok(new { Message = ((SuccessResponseResult)result).Message });
             }
             catch (Exception ex)
             {
-                _logger.LogError("Error deleting feedback: {Error}", ex.Message);
-                return StatusCode(500, new { Message = "An error occurred while deleting the feedback.", Error = ex.Message });
+                _logger.LogError(ex, "Lỗi khi xóa phản hồi với ID: {Id}", id);
+                return StatusCode(500, new { Message = "Lỗi khi xóa phản hồi.", Error = ex.Message });
             }
         }
     }
