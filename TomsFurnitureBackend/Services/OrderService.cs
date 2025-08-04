@@ -33,33 +33,52 @@ namespace TomsFurnitureBackend.Services
         private string ValidateOrderWithDb(OrderCreateVModel model, bool isAuthenticated = false)
         {
             if (model.OrderDetails == null || !model.OrderDetails.Any())
-                return "Order must have at least one order detail.";
+                return "Đơn hàng phải có ít nhất một sản phẩm.";
 
             foreach (var detail in model.OrderDetails)
             {
                 if (detail == null)
-                    return "Order detail cannot be null.";
+                    return "Thông tin sản phẩm không được để trống.";
 
                 // Kiểm tra proVarId phải > 0 và tồn tại trong ProductVariant
                 if (detail.ProVarId == null || detail.ProVarId <= 0 || !_context.ProductVariants.Any(pv => pv.Id == detail.ProVarId))
-                    return $"Product variant with ID {detail.ProVarId} does not exist.";
+                    return $"Biến thể sản phẩm với ID {detail.ProVarId} không tồn tại.";
+
+                // Kiểm tra số lượng
+                if (detail.Quantity <= 0)
+                    return "Số lượng sản phẩm phải lớn hơn 0.";
             }
 
             if (model.ShippingPrice < 0)
-                return "Shipping price must be non-negative.";
+                return "Phí vận chuyển không được âm.";
 
             if (!model.PaymentMethodId.HasValue || model.PaymentMethodId <= 0)
-                return "Payment method is required.";
+                return "Phương thức thanh toán là bắt buộc.";
+
+            // Kiểm tra phương thức thanh toán có tồn tại không
+            if (!_context.PaymentMethods.Any(pm => pm.Id == model.PaymentMethodId))
+                return $"Phương thức thanh toán với ID {model.PaymentMethodId} không tồn tại.";
 
             // Chỉ kiểm tra OrderAddId khi người dùng đăng nhập
             if (isAuthenticated)
             {
                 if (!model.OrderAddId.HasValue || model.OrderAddId <= 0)
-                    return "Order address is required.";
+                    return "Địa chỉ giao hàng là bắt buộc.";
+
+                // Kiểm tra địa chỉ giao hàng có tồn tại không
+                if (!_context.OrderAddresses.Any(oa => oa.Id == model.OrderAddId))
+                    return $"Địa chỉ giao hàng với ID {model.OrderAddId} không tồn tại.";
+            }
+
+            // Kiểm tra khuyến mãi nếu có
+            if (model.PromotionId.HasValue && model.PromotionId > 0)
+            {
+                if (!_context.Promotions.Any(p => p.Id == model.PromotionId))
+                    return $"Khuyến mãi với ID {model.PromotionId} không tồn tại.";
             }
 
             if (!string.IsNullOrEmpty(model.Note) && model.Note.Length > 500)
-                return "Note must be less than 500 characters.";
+                return "Ghi chú phải ít hơn 500 ký tự.";
 
             return string.Empty;
         }
@@ -119,28 +138,28 @@ namespace TomsFurnitureBackend.Services
                 }
             }
 
-            // Bước 2: Kiểm tra hợp lệ trạng thái đăng nhập/khách (giữ nguyên)
+            // Bước 2: Kiểm tra hợp lệ trạng thái đăng nhập/khách
             if (isAuthenticated)
             {
                 // Nếu đã đăng nhập mà truyền UserGuestId thì báo lỗi
                 if (model.UserGuestId.HasValue && model.UserGuestId.Value > 0)
-                    return new ErrorResponseResult("User is authenticated, UserGuestId must not be provided.");
+                    return new ErrorResponseResult("Người dùng đã đăng nhập, không được cung cấp UserGuestId.");
 
                 // Nếu IsUserGuest là true thì báo lỗi
                 if (model.GetType().GetProperty("IsUserGuest") != null && (bool)model.GetType().GetProperty("IsUserGuest").GetValue(model) == true)
-                    return new ErrorResponseResult("User is authenticated, IsUserGuest must not be true.");
+                    return new ErrorResponseResult("Người dùng đã đăng nhập, IsUserGuest không được là true.");
             }
             else
             {
                 // Nếu chưa đăng nhập mà không có UserGuestId hoặc UserGuestId không hợp lệ thì báo lỗi
                 if (!model.UserGuestId.HasValue || model.UserGuestId.Value <= 0)
-                    return new ErrorResponseResult("User is not authenticated, a valid UserGuestId is required.");
+                    return new ErrorResponseResult("Người dùng chưa đăng nhập, cần có UserGuestId hợp lệ.");
 
                 // Kiểm tra UserGuestId có tồn tại trong database không
                 var existUserGuest = await _context.UserGuests
                     .FirstOrDefaultAsync(ug => ug.Id == model.UserGuestId);
                 if (existUserGuest == null)
-                    return new ErrorResponseResult("Userguest cannot process. Please try again!");
+                    return new ErrorResponseResult("Thông tin khách vãng lai không hợp lệ. Vui lòng thử lại!");
             }
 
             // Bước 3: Kiểm tra dữ liệu đầu vào đơn hàng
@@ -183,16 +202,16 @@ namespace TomsFurnitureBackend.Services
                     .FirstOrDefaultAsync(p => p.Id == order.PromotionId && p.IsActive == true);
 
                 if (promotion == null)
-                    return new ErrorResponseResult("Invalid or inactive promotion.");
+                    return new ErrorResponseResult("Khuyến mãi không hợp lệ hoặc đã hết hạn.");
 
                 if (Total < promotion.OrderMinimum)
-                    return new ErrorResponseResult($"Order total must be at least {promotion.OrderMinimum} to apply this promotion.");
+                    return new ErrorResponseResult($"Tổng đơn hàng phải ít nhất {promotion.OrderMinimum:N0} VNĐ để áp dụng khuyến mãi này.");
 
                 if (DateTime.UtcNow < promotion.StartDate || DateTime.UtcNow > promotion.EndDate)
-                    return new ErrorResponseResult("Promotion is not valid at this time.");
+                    return new ErrorResponseResult("Khuyến mãi không có hiệu lực tại thời điểm này.");
 
                 if (promotion.CouponUsage <= 0)
-                    return new ErrorResponseResult("Promotion usage limit reached.");
+                    return new ErrorResponseResult("Đã đạt giới hạn sử dụng khuyến mãi.");
 
                 if (promotion.PromotionType != null)
                 {
@@ -305,7 +324,6 @@ namespace TomsFurnitureBackend.Services
                 }
             }
 
-
             // Bước 13: Trả về kết quả thành công
             return new SuccessResponseResult(
                 new {
@@ -313,7 +331,7 @@ namespace TomsFurnitureBackend.Services
                     Order = orderWithStatus?.ToGetVModel(),
                     PaymentUrl = paymentUrl // Trả về URL thanh toán nếu có
                 },
-                "Payment processed successfully. Order is pending confirmation."
+                "Xử lý thanh toán thành công. Đơn hàng đang chờ xác nhận."
             );
         }
 
@@ -324,6 +342,9 @@ namespace TomsFurnitureBackend.Services
                 .Include(o => o.OrderDetails)
                     .ThenInclude(od => od.ProVar)
                         .ThenInclude(pv => pv.Color)
+                .Include(o => o.OrderDetails)
+                    .ThenInclude(od => od.ProVar)
+                        .ThenInclude(pv => pv.ProductVariantImages)
                 .Include(o => o.OrderDetails)
                     .ThenInclude(od => od.ProVar)
                         .ThenInclude(pv => pv.Size)
@@ -342,8 +363,22 @@ namespace TomsFurnitureBackend.Services
         {
             var orders = await _context.Orders
                 .Where(o => o.UserId == userId)
+                .Include(o => o.OrderSta)
                 .Include(o => o.OrderDetails)
                     .ThenInclude(od => od.ProVar)
+                        .ThenInclude(pv => pv.ProductVariantImages)
+                .Include(o => o.OrderDetails)
+                    .ThenInclude(od => od.ProVar)
+                        .ThenInclude(pv => pv.Color)
+                .Include(o => o.OrderDetails)
+                    .ThenInclude(od => od.ProVar)
+                        .ThenInclude(pv => pv.Size)
+                .Include(o => o.OrderDetails)
+                    .ThenInclude(od => od.ProVar)
+                        .ThenInclude(pv => pv.Material)
+                .Include(o => o.OrderDetails)
+                    .ThenInclude(od => od.ProVar)
+                        .ThenInclude(pv => pv.Unit)
                 .Include(o => o.User)
                 .Include(o => o.UserGuest)
                 .ToListAsync();
@@ -386,21 +421,21 @@ namespace TomsFurnitureBackend.Services
                 .Include(o => o.UserGuest)
                 .FirstOrDefaultAsync(o => o.Id == orderId);
             if (order == null)
-                return new ErrorResponseResult("Order not found.");
+                return new ErrorResponseResult("Không tìm thấy đơn hàng.");
 
             if (!order.OrderStaId.HasValue)
-                return new ErrorResponseResult("Order does not have a current status.");
+                return new ErrorResponseResult("Đơn hàng không có trạng thái hiện tại.");
 
             // Không cho phép cập nhật ngược trạng thái hoặc nhảy trạng thái
             if (newStatusId != order.OrderStaId.Value + 1)
             {
-                return new ErrorResponseResult("Order status must be updated in sequence. Cannot skip or revert statuses.");
+                return new ErrorResponseResult("Trạng thái đơn hàng phải được cập nhật theo thứ tự. Không thể bỏ qua hoặc quay lại trạng thái trước đó.");
             }
 
             // Kiểm tra trạng thái mới có tồn tại không
             var newStatus = await _context.OrderStatuses.FirstOrDefaultAsync(s => s.Id == newStatusId);
             if (newStatus == null)
-                return new ErrorResponseResult("Target status does not exist.");
+                return new ErrorResponseResult("Trạng thái đích không tồn tại.");
 
             // Nếu cập nhật sang trạng thái Confirmed (OrderStaId = 2) và trạng thái cũ < 2
             if (newStatusId == 2 && order.OrderStaId.Value < 2)
@@ -412,7 +447,7 @@ namespace TomsFurnitureBackend.Services
                     {
                         if (detail.ProVar.StockQty < detail.Quantity)
                         {
-                            return new ErrorResponseResult($"Not enough stock for product variant ID {detail.ProVar.Id}.");
+                            return new ErrorResponseResult($"Không đủ tồn kho cho biến thể sản phẩm ID {detail.ProVar.Id}.");
                         }
                         detail.ProVar.StockQty -= detail.Quantity;
                     }
@@ -446,25 +481,25 @@ namespace TomsFurnitureBackend.Services
                 await _emailService.SendEmailAsync(toEmail, subject, body);
             }
 
-            return new SuccessResponseResult(order.ToGetVModel(), "Order status updated successfully.");
+            return new SuccessResponseResult(order.ToGetVModel(), "Cập nhật trạng thái đơn hàng thành công.");
         }
 
         public async Task<ResponseResult> CancelOrderAsync(int orderId)
         {
             var order = await _context.Orders.FirstOrDefaultAsync(o => o.Id == orderId);
             if (order == null)
-                return new ErrorResponseResult("Order not found.");
+                return new ErrorResponseResult("Không tìm thấy đơn hàng.");
 
             if (order.OrderStaId != 1) // 1 = Pending Confirmation
-                return new ErrorResponseResult("Chỉ được huỷ đơn khi đang ở trạng thái Chờ xác nhận.");
+                return new ErrorResponseResult("Chỉ được hủy đơn khi đang ở trạng thái chờ xác nhận.");
 
             order.OrderStaId = 6; // 6 = Cancelled
             order.UpdatedDate = DateTime.UtcNow;
             await _context.SaveChangesAsync();
 
-            // (Có thể gửi email thông báo huỷ đơn ở đây nếu muốn)
+            // (Có thể gửi email thông báo hủy đơn ở đây nếu muốn)
 
-            return new SuccessResponseResult(order.ToGetVModel(), "Order cancelled successfully.");
+            return new SuccessResponseResult(order.ToGetVModel(), "Hủy đơn hàng thành công.");
         }
     }
 }

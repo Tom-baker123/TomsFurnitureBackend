@@ -30,25 +30,25 @@ namespace TomsFurnitureBackend.Services
             // Kiểm tra loại hình kinh doanh không được để trống
             if (string.IsNullOrWhiteSpace(model.BusinessType))
             {
-                return "Business type is required.";
+                return "Loại hình kinh doanh là bắt buộc.";
             }
 
             // Kiểm tra loại hình kinh doanh không quá 100 ký tự
             if (model.BusinessType.Length > 100)
             {
-                return "Business type must be less than 100 characters.";
+                return "Loại hình kinh doanh phải dưới 100 ký tự.";
             }
 
             // Kiểm tra tên cửa hàng nếu có
             if (!string.IsNullOrWhiteSpace(model.StoreName) && model.StoreName.Length > 100)
             {
-                return "Store name must be less than 100 characters.";
+                return "Tên cửa hàng phải dưới 100 ký tự.";
             }
 
             // Kiểm tra địa chỉ nếu có
             if (!string.IsNullOrWhiteSpace(model.StoreAddress) && model.StoreAddress.Length > 255)
             {
-                return "Store address must be less than 255 characters.";
+                return "Địa chỉ cửa hàng phải dưới 255 ký tự.";
             }
 
             // Kiểm tra số điện thoại nếu có
@@ -56,7 +56,7 @@ namespace TomsFurnitureBackend.Services
             {
                 if (model.PhoneNumber.Length > 20)
                 {
-                    return "Phone number must be less than 20 characters.";
+                    return "Số điện thoại phải dưới 20 ký tự.";
                 }
                 //if (!Regex.IsMatch(model.PhoneNumber, @"^\+?[1-9]\d{1,14}$"))
                 //{
@@ -69,11 +69,11 @@ namespace TomsFurnitureBackend.Services
             {
                 if (!Regex.IsMatch(model.Email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
                 {
-                    return "Invalid email format.";
+                    return "Định dạng email không hợp lệ.";
                 }
                 if (model.Email.Length > 255)
                 {
-                    return "Email must be less than 255 characters.";
+                    return "Email phải dưới 255 ký tự.";
                 }
             }
 
@@ -82,86 +82,86 @@ namespace TomsFurnitureBackend.Services
             if (!string.IsNullOrWhiteSpace(model.LinkWebsite))
             {
                 if (!Regex.IsMatch(model.LinkWebsite, urlRegex))
-                    return "Invalid website URL.";
+                    return "URL website không hợp lệ.";
                 if (model.LinkWebsite.Length > 255)
-                    return "Website URL must be less than 255 characters.";
+                    return "URL website phải dưới 255 ký tự.";
             }
             if (!string.IsNullOrWhiteSpace(model.LinkSocialFacebook))
             {
                 if (!Regex.IsMatch(model.LinkSocialFacebook, urlRegex))
-                    return "Invalid Facebook URL.";
+                    return "URL Facebook không hợp lệ.";
                 if (model.LinkSocialFacebook.Length > 255)
-                    return "Facebook URL must be less than 255 characters.";
+                    return "URL Facebook phải dưới 255 ký tự.";
             }
             if (!string.IsNullOrWhiteSpace(model.LinkSocialTwitter))
             {
                 if (!Regex.IsMatch(model.LinkSocialTwitter, urlRegex))
-                    return "Invalid Twitter URL.";
+                    return "URL Twitter không hợp lệ.";
                 if (model.LinkSocialTwitter.Length > 255)
-                    return "Twitter URL must be less than 255 characters.";
+                    return "URL Twitter phải dưới 255 ký tự.";
             }
             if (!string.IsNullOrWhiteSpace(model.LinkSocialInstagram))
             {
                 if (!Regex.IsMatch(model.LinkSocialInstagram, urlRegex))
-                    return "Invalid Instagram URL.";
+                    return "URL Instagram không hợp lệ.";
                 if (model.LinkSocialInstagram.Length > 255)
-                    return "Instagram URL must be less than 255 characters.";
+                    return "URL Instagram phải dưới 255 ký tự.";
             }
             if (!string.IsNullOrWhiteSpace(model.LinkSocialTiktok))
             {
                 if (!Regex.IsMatch(model.LinkSocialTiktok, urlRegex))
-                    return "Invalid TikTok URL.";
+                    return "URL TikTok không hợp lệ.";
                 if (model.LinkSocialTiktok.Length > 255)
-                    return "TikTok URL must be less than 255 characters.";
+                    return "URL TikTok phải dưới 255 ký tự.";
             }
             if (!string.IsNullOrWhiteSpace(model.LinkSocialYoutube))
             {
                 if (!Regex.IsMatch(model.LinkSocialYoutube, urlRegex))
-                    return "Invalid YouTube URL.";
+                    return "URL YouTube không hợp lệ.";
                 if (model.LinkSocialYoutube.Length > 255)
-                    return "YouTube URL must be less than 255 characters.";
+                    return "URL YouTube phải dưới 255 ký tự.";
             }
 
             // Kiểm tra vĩ độ nếu có
             if (model.Latitude.HasValue && (model.Latitude < -90 || model.Latitude > 90))
             {
-                return "Latitude must be between -90 and 90.";
+                return "Vĩ độ phải nằm trong khoảng từ -90 đến 90.";
             }
 
             // Kiểm tra kinh độ nếu có
             if (model.Longitude.HasValue && (model.Longitude < -180 || model.Longitude > 180))
             {
-                return "Longitude must be between -180 and 180.";
+                return "Kinh độ phải nằm trong khoảng từ -180 đến 180.";
             }
 
             // Kiểm tra tên chủ sở hữu nếu có
             if (!string.IsNullOrWhiteSpace(model.OwnerName) && model.OwnerName.Length > 100)
             {
-                return "Owner name must be less than 100 characters.";
+                return "Tên chủ sở hữu phải dưới 100 ký tự.";
             }
 
             // Kiểm tra giờ hoạt động nếu có
             if (!string.IsNullOrWhiteSpace(model.OperatingHours) && model.OperatingHours.Length > 100)
             {
-                return "Operating hours must be less than 100 characters.";
+                return "Giờ hoạt động phải dưới 100 ký tự.";
             }
 
             // Kiểm tra mô tả cửa hàng nếu có
             if (!string.IsNullOrWhiteSpace(model.StoreDescription) && model.StoreDescription.Length > 1000)
             {
-                return "Store description must be less than 1000 characters.";
+                return "Mô tả cửa hàng phải dưới 1000 ký tự.";
             }
 
             // Kiểm tra mã số thuế nếu có
             if (!string.IsNullOrWhiteSpace(model.TaxId) && model.TaxId.Length > 50)
             {
-                return "Tax ID must be less than 50 characters.";
+                return "Mã số thuế phải dưới 50 ký tự.";
             }
 
             // Kiểm tra mã chi nhánh nếu có
             if (!string.IsNullOrWhiteSpace(model.BranchCode) && model.BranchCode.Length > 50)
             {
-                return "Branch code must be less than 50 characters.";
+                return "Mã chi nhánh phải dưới 50 ký tự.";
             }
 
             return string.Empty; // Trả về chuỗi rỗng nếu không có lỗi
@@ -173,7 +173,7 @@ namespace TomsFurnitureBackend.Services
             // Kiểm tra Id hợp lệ
             if (model.Id <= 0)
             {
-                return "Invalid store information ID.";
+                return "ID thông tin cửa hàng không hợp lệ.";
             }
 
             // Áp dụng các validation của Create
@@ -197,7 +197,7 @@ namespace TomsFurnitureBackend.Services
                     .AnyAsync(s => s.IsActive == true);
                 if (activeStore)
                 {
-                    return new ErrorResponseResult("An active store information record already exists.");
+                    return new ErrorResponseResult("Đã tồn tại một bản ghi thông tin cửa hàng đang hoạt động.");
                 }
 
                 // B3: Kiểm tra email nếu có
@@ -207,7 +207,7 @@ namespace TomsFurnitureBackend.Services
                         .AnyAsync(s => s.Email != null && s.Email.ToLower() == model.Email.ToLower());
                     if (existingEmail)
                     {
-                        return new ErrorResponseResult("Email already exists.");
+                        return new ErrorResponseResult("Email đã tồn tại.");
                     }
                 }
 
@@ -218,7 +218,7 @@ namespace TomsFurnitureBackend.Services
                         .AnyAsync(s => s.TaxId != null && s.TaxId.ToLower() == model.TaxId.ToLower());
                     if (existingTaxId)
                     {
-                        return new ErrorResponseResult("Tax ID already exists.");
+                        return new ErrorResponseResult("Mã số thuế đã tồn tại.");
                     }
                 }
 
@@ -231,11 +231,11 @@ namespace TomsFurnitureBackend.Services
 
                 // B7: Trả về kết quả thành công
                 var storeInformationVM = storeInformation.ToGetVModel();
-                return new SuccessResponseResult(storeInformationVM, "Store information created successfully.");
+                return new SuccessResponseResult(storeInformationVM, "Thêm mới thông tin cửa hàng thành công.");
             }
             catch (Exception ex)
             {
-                return new ErrorResponseResult($"An error occurred while creating the store information: {ex.Message}");
+                return new ErrorResponseResult($"Đã xảy ra lỗi khi tạo mới thông tin cửa hàng: {ex.Message}");
             }
         }
 
@@ -249,7 +249,7 @@ namespace TomsFurnitureBackend.Services
                     .FirstOrDefaultAsync(s => s.Id == id);
                 if (storeInformation == null)
                 {
-                    return new ErrorResponseResult($"Store information not found with ID: {id}.");
+                    return new ErrorResponseResult($"Không tìm thấy thông tin cửa hàng với ID: {id}.");
                 }
 
                 // B2: Xóa thông tin cửa hàng
@@ -257,11 +257,11 @@ namespace TomsFurnitureBackend.Services
                 await _context.SaveChangesAsync();
 
                 // B3: Trả về kết quả thành công
-                return new SuccessResponseResult(null, "Store information deleted successfully.");
+                return new SuccessResponseResult(null, "Xóa thông tin cửa hàng thành công.");
             }
             catch (Exception ex)
             {
-                return new ErrorResponseResult($"An error occurred while deleting the store information: {ex.Message}");
+                return new ErrorResponseResult($"Đã xảy ra lỗi khi xóa thông tin cửa hàng: {ex.Message}");
             }
         }
 
@@ -301,7 +301,7 @@ namespace TomsFurnitureBackend.Services
                     .FirstOrDefaultAsync(s => s.Id == model.Id);
                 if (storeInformation == null)
                 {
-                    return new ErrorResponseResult($"Store information not found with ID: {model.Id}.");
+                    return new ErrorResponseResult($"Không tìm thấy thông tin cửa hàng với ID: {model.Id}.");
                 }
 
                 // B3: Kiểm tra chỉ có một bản ghi IsActive = true
@@ -311,7 +311,7 @@ namespace TomsFurnitureBackend.Services
                         .AnyAsync(s => s.IsActive == true && s.Id != model.Id);
                     if (activeStore)
                     {
-                        return new ErrorResponseResult("Another active store information record already exists.");
+                        return new ErrorResponseResult("Đã tồn tại một bản ghi thông tin cửa hàng đang hoạt động khác.");
                     }
                 }
 
@@ -322,7 +322,7 @@ namespace TomsFurnitureBackend.Services
                         .AnyAsync(s => s.Email != null && s.Email.ToLower() == model.Email.ToLower() && s.Id != model.Id);
                     if (existingEmail)
                     {
-                        return new ErrorResponseResult("Email already exists.");
+                        return new ErrorResponseResult("Email đã tồn tại.");
                     }
                 }
 
@@ -333,7 +333,7 @@ namespace TomsFurnitureBackend.Services
                         .AnyAsync(s => s.TaxId != null && s.TaxId.ToLower() == model.TaxId.ToLower() && s.Id != model.Id);
                     if (existingTaxId)
                     {
-                        return new ErrorResponseResult("Tax ID already exists.");
+                        return new ErrorResponseResult("Mã số thuế đã tồn tại.");
                     }
                 }
 
@@ -345,11 +345,11 @@ namespace TomsFurnitureBackend.Services
 
                 // B8: Chuyển Entity thành ViewModel để trả về
                 var storeInformationVM = storeInformation.ToGetVModel();
-                return new SuccessResponseResult(storeInformationVM, "Store information updated successfully.");
+                return new SuccessResponseResult(storeInformationVM, "Cập nhật thông tin cửa hàng thành công.");
             }
             catch (Exception ex)
             {
-                return new ErrorResponseResult($"An error occurred while updating the store information: {ex.Message}");
+                return new ErrorResponseResult($"Đã xảy ra lỗi khi cập nhật thông tin cửa hàng: {ex.Message}");
             }
         }
     }

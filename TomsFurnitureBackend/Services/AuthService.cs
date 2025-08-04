@@ -39,18 +39,18 @@ namespace TomsFurnitureBackend.Services
             // Kiểm tra email có rỗng hoặc null không
             if (string.IsNullOrWhiteSpace(model.Email))
             {
-                return "Email is required.";
+                return "Email là bắt buộc.";
             }
             // Kiểm tra định dạng email bằng regex
             const string emailRegex = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
             if (!Regex.IsMatch(model.Email.Trim(), emailRegex))
             {
-                return "Invalid email format.";
+                return "Định dạng email không hợp lệ.";
             }
             // Kiểm tra mật khẩu có rỗng hoặc null không
             if (string.IsNullOrWhiteSpace(model.Password))
             {
-                return "Password is required.";
+                return "Mật khẩu là bắt buộc.";
             }
             return string.Empty;
         }
@@ -61,28 +61,28 @@ namespace TomsFurnitureBackend.Services
             // Kiểm tra tên người dùng có rỗng hoặc null không
             if (string.IsNullOrWhiteSpace(model.UserName))
             {
-                return "Username is required.";
+                return "Tên người dùng là bắt buộc.";
             }
             // Kiểm tra email có rỗng hoặc null không
             if (string.IsNullOrWhiteSpace(model.Email))
             {
-                return "Email is required.";
+                return "Email là bắt buộc.";
             }
             // Kiểm tra định dạng email bằng regex
             const string emailRegex = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
             if (!Regex.IsMatch(model.Email.Trim(), emailRegex))
             {
-                return "Invalid email format.";
+                return "Định dạng email không hợp lệ.";
             }
             // Kiểm tra mật khẩu có rỗng hoặc null không
             if (string.IsNullOrWhiteSpace(model.Password))
             {
-                return "Password is required.";
+                return "Mật khẩu là bắt buộc.";
             }
             // Kiểm tra độ dài mật khẩu
             if (model.Password.Length < 6)
             {
-                return "Password must be at least 6 characters long.";
+                return "Mật khẩu phải có ít nhất 6 ký tự.";
             }
 
             // Kiểm tra và chuẩn hóa số điện thoại nếu có
@@ -105,13 +105,13 @@ namespace TomsFurnitureBackend.Services
             // Kiểm tra email có rỗng hoặc null không
             if (string.IsNullOrWhiteSpace(email))
             {
-                return "Email is required.";
+                return "Email là bắt buộc.";
             }
             // Kiểm tra định dạng email bằng regex
             const string emailRegex = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
             if (!Regex.IsMatch(email.Trim(), emailRegex))
             {
-                return "Invalid email format.";
+                return "Định dạng email không hợp lệ.";
             }
             return string.Empty;
         }
@@ -122,18 +122,18 @@ namespace TomsFurnitureBackend.Services
             // Kiểm tra email có rỗng hoặc null không
             if (string.IsNullOrWhiteSpace(model.Email))
             {
-                return "Email is required.";
+                return "Email là bắt buộc.";
             }
             // Kiểm tra định dạng email bằng regex
             const string emailRegex = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
             if (!Regex.IsMatch(model.Email.Trim(), emailRegex))
             {
-                return "Invalid email format.";
+                return "Định dạng email không hợp lệ.";
             }
             // Kiểm tra OTP có rỗng hoặc null không
             if (string.IsNullOrWhiteSpace(model.Otp))
             {
-                return "OTP is required.";
+                return "Mã OTP là bắt buộc.";
             }
             return string.Empty;
         }
@@ -144,23 +144,23 @@ namespace TomsFurnitureBackend.Services
             // Kiểm tra email có rỗng hoặc null không
             if (string.IsNullOrWhiteSpace(model.Email))
             {
-                return "Email is required.";
+                return "Email là bắt buộc.";
             }
             // Kiểm tra định dạng email bằng regex
             const string emailRegex = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
             if (!Regex.IsMatch(model.Email.Trim(), emailRegex))
             {
-                return "Invalid email format.";
+                return "Định dạng email không hợp lệ.";
             }
             // Kiểm tra mật khẩu mới có rỗng hoặc null không
             if (string.IsNullOrWhiteSpace(model.NewPassword))
             {
-                return "New password is required.";
+                return "Mật khẩu mới là bắt buộc.";
             }
             // Kiểm tra độ dài mật khẩu mới
             if (model.NewPassword.Length < 6)
             {
-                return "New password must be at least 6 characters long.";
+                return "Mật khẩu mới phải có ít nhất 6 ký tự.";
             }
             return string.Empty;
         }
@@ -171,32 +171,32 @@ namespace TomsFurnitureBackend.Services
             // Kiểm tra tên người dùng có rỗng hoặc null không
             if (string.IsNullOrWhiteSpace(model.UserName))
             {
-                return "Username is required.";
+                return "Tên người dùng là bắt buộc.";
             }
             // Kiểm tra email có rỗng hoặc null không
             if (string.IsNullOrWhiteSpace(model.Email))
             {
-                return "Email is required.";
+                return "Email là bắt buộc.";
             }
             // Kiểm tra định dạng email bằng regex
             const string emailRegex = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
             if (!Regex.IsMatch(model.Email.Trim(), emailRegex))
             {
-                return "Invalid email format.";
+                return "Định dạng email không hợp lệ.";
             }
             // Kiểm tra mật khẩu
             if (string.IsNullOrWhiteSpace(model.Password))
             {
-                return "Password is required.";
+                return "Mật khẩu là bắt buộc.";
             }
             if (model.Password.Length < 6)
             {
-                return "Password must be at least 6 characters long.";
+                return "Mật khẩu phải có ít nhất 6 ký tự.";
             }
             // Kiểm tra ID vai trò hợp lệ
             if (model.RoleId <= 0)
             {
-                return "Role is required.";
+                return "Vai trò là bắt buộc.";
             }
 
             // Kiểm tra và chuẩn hóa số điện thoại nếu có
@@ -219,23 +219,23 @@ namespace TomsFurnitureBackend.Services
             // Kiểm tra tên người dùng có rỗng hoặc null không
             if (string.IsNullOrWhiteSpace(model.UserName))
             {
-                return "Username is required.";
+                return "Tên người dùng là bắt buộc.";
             }
             // Kiểm tra email có rỗng hoặc null không
             if (string.IsNullOrWhiteSpace(model.Email))
             {
-                return "Email is required.";
+                return "Email là bắt buộc.";
             }
             // Kiểm tra định dạng email bằng regex
             const string emailRegex = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
             if (!Regex.IsMatch(model.Email.Trim(), emailRegex))
             {
-                return "Invalid email format.";
+                return "Định dạng email không hợp lệ.";
             }
             // Kiểm tra ID vai trò hợp lệ
             if (model.RoleId <= 0)
             {
-                return "Role is required.";
+                return "Vai trò là bắt buộc.";
             }
 
             // Kiểm tra và chuẩn hóa số điện thoại nếu có
@@ -258,35 +258,35 @@ namespace TomsFurnitureBackend.Services
             // Kiểm tra tên người dùng có rỗng hoặc null không
             if (string.IsNullOrWhiteSpace(userName))
             {
-                return "Username is required.";
+                return "Tên người dùng là bắt buộc.";
             }
             // Kiểm tra email có rỗng hoặc null không
             if (string.IsNullOrWhiteSpace(email))
             {
-                return "Email is required.";
+                return "Email là bắt buộc.";
             }
             // Kiểm tra định dạng email bằng regex
             const string emailRegex = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
             if (!Regex.IsMatch(email.Trim(), emailRegex))
             {
-                return "Invalid email format.";
+                return "Định dạng email không hợp lệ.";
             }
             // Kiểm tra mật khẩu khi thêm người dùng mới
             if (isAdd)
             {
                 if (string.IsNullOrWhiteSpace(password))
                 {
-                    return "Password is required.";
+                    return "Mật khẩu là bắt buộc.";
                 }
                 if (password.Length < 6)
                 {
-                    return "Password must be at least 6 characters long.";
+                    return "Mật khẩu phải có ít nhất 6 ký tự.";
                 }
             }
             // Kiểm tra ID vai trò hợp lệ
             if (roleId <= 0)
             {
-                return "Role is required.";
+                return "Vai trò là bắt buộc.";
             }
             return string.Empty;
         }
