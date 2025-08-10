@@ -13,6 +13,7 @@ using TomsFurnitureBackend.VModels;
 using static TomsFurnitureBackend.VModels.OrderVModel;
 using TomsFurnitureBackend.Common.Contansts;
 using TomsFurnitureBackend.Helpers.EmailContentHelpers;
+using Microsoft.Extensions.Logging;
 
 namespace TomsFurnitureBackend.Services
 {
@@ -22,12 +23,15 @@ namespace TomsFurnitureBackend.Services
         private readonly IAuthService _authService;
         private readonly IVnPayService _vnPayService;
         private readonly IEmailService _emailService;
-        public OrderService(TomfurnitureContext context, IAuthService authService, IVnPayService vnPayService, IEmailService emailService)
+        private readonly ILogger<OrderService> _logger;
+
+        public OrderService(TomfurnitureContext context, IAuthService authService, IVnPayService vnPayService, IEmailService emailService, ILogger<OrderService> logger)
         {
             _context = context;
             _authService = authService;
             _vnPayService = vnPayService;
             _emailService = emailService;
+            _logger = logger;
         }
        
         private string ValidateOrderWithDb(OrderCreateVModel model, bool isAuthenticated = false)
@@ -388,6 +392,7 @@ namespace TomsFurnitureBackend.Services
         public async Task<List<OrderGetVModel>> GetAllOrdersAsync()
         {
             var orders = await _context.Orders
+                .Include(o => o.OrderSta)  // Đảm bảo load OrderStatus
                 .Include(o => o.OrderDetails)
                     .ThenInclude(od => od.ProVar)
                         .ThenInclude(pv => pv.ProductVariantImages)
@@ -403,9 +408,14 @@ namespace TomsFurnitureBackend.Services
                 .Include(o => o.OrderDetails)
                     .ThenInclude(od => od.ProVar)
                         .ThenInclude(pv => pv.Unit)
+                .Include(o => o.OrderDetails)
+                    .ThenInclude(od => od.ProVar)
+                        .ThenInclude(pv => pv.Product) // Thêm Product để có tên sản phẩm
                 .Include(o => o.User)
                 .Include(o => o.UserGuest)
+                .OrderByDescending(o => o.CreatedDate)  // Sắp xếp theo ngày tạo mới nhất
                 .ToListAsync();
+
             return orders.Select(o => o.ToGetVModel()).ToList();
         }
 
