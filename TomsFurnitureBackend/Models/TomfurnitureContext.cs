@@ -280,8 +280,6 @@ public partial class TomfurnitureContext : DbContext
         {
             entity.HasKey(e => e.Id).HasName("PK__Feedback__3214EC07E6D54238");
 
-            entity.HasIndex(e => e.Email, "UQ__Feedback__A9D105345349C03F").IsUnique();
-
             entity.Property(e => e.CreatedBy).HasMaxLength(255);
             entity.Property(e => e.CreatedDate).HasColumnType("datetime");
             entity.Property(e => e.Email).HasMaxLength(100);
